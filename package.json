@@ -1,0 +1,22 @@
+{
+  "name": "balaban-alerting",
+  "version": "1.0.0",
+  "description": "alerting subsystem for balaban endpoint detection response",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alireza-ebrahimi/alerting.git"
+  },
+  "author": "alireza ebrahimi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alireza-ebrahimi/alerting/issues"
+  },
+  "homepage": "https://github.com/alireza-ebrahimi/alerting#readme",
+  "dependencies": {
+    "later": "^1.2.0"
+  }
+}
