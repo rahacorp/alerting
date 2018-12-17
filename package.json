@@ -17,6 +17,11 @@
   },
   "homepage": "https://github.com/alireza-ebrahimi/alerting#readme",
   "dependencies": {
-    "later": "^1.2.0"
+    "@types/node": "^10.12.15",
+    "elasticsearch": "^15.2.0",
+    "flat": "^4.1.0",
+    "later": "^1.2.0",
+    "safe-eval": "^0.4.1",
+    "vm2": "^3.6.4"
   }
 }
