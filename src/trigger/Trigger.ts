@@ -1,5 +1,7 @@
-interface Trigger {
+import { Rule } from "../rule/rule";
+
+export interface Trigger {
     start();
     stop();
-    fire: () => void;
+    rule: Rule;
 }

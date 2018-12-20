@@ -1,13 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const context_1 = require("./context");
+const rule_1 = require("./src/rule/rule");
+const TimeTrigger_1 = require("./src/trigger/TimeTrigger");
+const ElasticInput_1 = require("./src/input/ElasticInput");
 class Startup {
     static main() {
-        let ctx = new context_1.Context();
-        ctx.set('key', {});
-        ctx.set("key['test']", 23);
-        console.log(ctx.get('key'));
-        ctx.print();
+        let myRule = new rule_1.Rule('rule1', 'testing', 'ir.raha.win');
+        myRule.setTrigger(new TimeTrigger_1.TimeTrigger('every 10 second', myRule));
+        myRule.addInput(new ElasticInput_1.ElasticInput({
+            "query": {
+                "match_all": {}
+            }
+        }, myRule.context, 'test_elastic'));
+        myRule.start();
         return 0;
     }
 }

@@ -1,13 +1,19 @@
 import * as later from 'later'
-import {Context} from './context'
+import {Context} from './src/context/context'
+import {Rule} from './src/rule/rule'
+import {TimeTrigger} from './src/trigger/TimeTrigger'
+import {ElasticInput} from './src/input/ElasticInput'
 
 class Startup {
     public static main(): number {
-        let ctx = new Context()
-        ctx.set('key', {})
-        ctx.set("key['test']", 23)
-        console.log(ctx.get('key'))
-        ctx.print()
+        let myRule = new Rule('rule1', 'testing', 'ir.raha.win')
+        myRule.setTrigger(new TimeTrigger('every 10 second', myRule))
+        myRule.addInput(new ElasticInput({
+            "query": {
+                "match_all": {}
+            }
+        }, myRule.context, 'test_elastic'))
+        myRule.start()
         return 0;
     }
 }

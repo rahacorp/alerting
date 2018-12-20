@@ -11,9 +11,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const elastic = __importStar(require("elasticsearch"));
-const config_json_1 = __importDefault(require("../config.json"));
+const config_json_1 = __importDefault(require("../../config.json"));
 class ClientFactory {
     static createClient(type) {
+        if (!ClientFactory.clients) {
+            ClientFactory.clients = {};
+        }
         if (ClientFactory.clients[type]) {
             return ClientFactory.clients[type];
         }

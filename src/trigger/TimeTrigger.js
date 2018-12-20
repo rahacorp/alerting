@@ -9,12 +9,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const later = __importStar(require("later"));
 class TimeTrigger {
-    constructor(laterStr, fireFunc) {
+    constructor(laterStr, rule) {
         this.laterObj = later.parse.text(laterStr);
-        this.fire = fireFunc;
+        this.rule = rule;
     }
     start() {
-        this.timer = later.setInterval(this.fire, this.laterObj);
+        console.log('start time trigger');
+        this.timer = later.setInterval(() => this.rule.fire(), this.laterObj);
     }
     stop() {
         if (this.timer) {
@@ -26,4 +27,5 @@ class TimeTrigger {
         }
     }
 }
+exports.TimeTrigger = TimeTrigger;
 //# sourceMappingURL=TimeTrigger.js.map

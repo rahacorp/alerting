@@ -18,17 +18,25 @@ class ElasticInput {
         this.name = name;
     }
     execute() {
-        return __awaiter(this, void 0, void 0, function* () {
-            //this.context.
+        //this.context.
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
             try {
-                let response = yield this.client.search(this.searchObj);
-                this.context.set('input.' + name + '.response', response);
+                this.context.set('inputs.' + this.name, {});
+                let response = yield this.client.search({
+                    "body": this.searchObj
+                });
+                // console.log('resp', response)
+                this.context.set('inputs.' + this.name + '.response', response);
+                console.log('response set');
+                resolve();
             }
             catch (err) {
-                this.context.set('input.' + name + '.error', err);
-                throw err;
+                console.log('err', err);
+                this.context.set('inputs.' + this.name + '.error', err);
+                reject(err);
             }
-        });
+        }));
     }
 }
+exports.ElasticInput = ElasticInput;
 //# sourceMappingURL=ElasticInput.js.map

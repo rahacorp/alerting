@@ -2,6 +2,7 @@ import safeEval from 'safe-eval'
 import * as flat from 'flat'
 import {NodeVM} from 'vm2'
 import * as util from 'util'
+import * as fs from 'fs'
 
 export class Context {
     ctx : any
@@ -19,6 +20,8 @@ export class Context {
             wrapper: 'none'
         })
         this.vm.run('ctx = {}')
+        this.vm.run('ctx.inputs = {}')
+        this.vm.run('ctx.conditions = {}')
     }
 
     public print() {
@@ -26,9 +29,11 @@ export class Context {
     }
 
     public set(addr : string, obj : any) {
-        obj = JSON.stringify(obj)
-        let code = 'ctx.' + addr + '= JSON.parse(\'' + obj + '\')'
-        //console.log(code)
+        let objStr: string
+        objStr = Buffer.from(JSON.stringify(obj)).toString("base64")
+        let code = "ctx." + addr + " = JSON.parse(Buffer.from('" + objStr + "', 'base64').toString())"
+        //fs.writeFileSync('./code.txt', code)
+        // console.log(code)
         this.vm.run(code)
         //console.log(this.vm.run('return ctx'))
     }

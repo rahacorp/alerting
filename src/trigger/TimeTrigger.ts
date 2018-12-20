@@ -1,17 +1,21 @@
 import * as later from 'later'
+import { Rule } from '../rule/rule';
+import { Trigger } from './Trigger';
 
-class TimeTrigger implements Trigger {
+export class TimeTrigger implements Trigger {
     laterObj;
     fire: () => void;
-    timer;
+    timer
+    rule: Rule
 
-    constructor(laterStr: string, fireFunc: () => void) {
+    constructor(laterStr: string, rule : Rule) {
         this.laterObj = later.parse.text(laterStr);
-        this.fire = fireFunc;
+        this.rule = rule
     }
 
     start() {
-        this.timer = later.setInterval(this.fire, this.laterObj);
+        console.log('start time trigger')
+        this.timer = later.setInterval(() => this.rule.fire(), this.laterObj);
     }
 
     stop() {

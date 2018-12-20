@@ -1,11 +1,14 @@
 import * as elastic from 'elasticsearch'
-import config from '../config.json'
+import config from '../../config.json'
 
 export class ClientFactory {
 
     static clients: any
 
     public static createClient(type: string) {
+        if(!ClientFactory.clients) {
+            ClientFactory.clients = {}
+        }
         if (ClientFactory.clients[type]) {
             return ClientFactory.clients[type]
         } else {

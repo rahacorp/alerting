@@ -1,7 +1,7 @@
 import { ClientFactory } from "../clientFactory/ClientFactory";
-import {Context} from "../context"
+import {Context} from "../context/context"
 
-class ElasticInput implements Input {
+export class ElasticInput implements Input {
     client: any
     searchObj: any
     context: Context
@@ -16,14 +16,26 @@ class ElasticInput implements Input {
         this.name = name
     }
 
-    async execute() {
+    execute() {
         //this.context.
-        try {
-            let response = await this.client.search(this.searchObj)
-            this.context.set('input.' + name + '.response', response)
-        } catch (err) {
-            this.context.set('input.' + name + '.error', err)
-            throw err
-        }
+        return new Promise(async (resolve, reject) => {
+            try {
+                this.context.set('inputs.' + this.name, {
+
+                })
+                let response = await this.client.search({
+                    "body": this.searchObj
+                })
+                // console.log('resp', response)
+                this.context.set('inputs.' + this.name + '.response', response)
+                console.log('response set')
+                resolve()
+            } catch (err) {
+                console.log('err', err)
+                this.context.set('inputs.' + this.name + '.error', err)
+                reject(err)
+            }
+        })
+        
     }
 }
