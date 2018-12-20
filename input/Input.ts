@@ -1,3 +1,0 @@
-interface Input {
-    execute();
-}
