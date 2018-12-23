@@ -1,5 +1,3 @@
-import * as later from 'later'
-import {Context} from './src/context/context'
 import {Rule} from './src/rule/rule'
 import {TimeTrigger} from './src/trigger/TimeTrigger'
 import {ElasticInput} from './src/input/ElasticInput'
