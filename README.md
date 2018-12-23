@@ -1,1 +1,2 @@
-alerting subsystem for endpoint detection response
+## Alerting
+-  ElasticSearch
