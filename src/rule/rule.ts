@@ -12,10 +12,12 @@ export class Rule {
     description : string
     condition: string
 
+
     constructor(name : string, description : string, pkg : string) {
         this.context = new Context()
         this.inputs = []
         this.triggers = []
+        this.actions = []
         this.name = name
         this.description = description
         this.pkg = pkg
@@ -54,8 +56,7 @@ export class Rule {
         }
         // this.context.print()
         if(this.context.evaluate(this.condition)) {
-            console.log('eval true :', this.condition)
-            
+            //console.log('eval true :', this.condition)
             for(let action of this.actions) {
                 action.act(this.name + ' matched')
             }

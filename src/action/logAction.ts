@@ -7,6 +7,6 @@ export class LogAction implements Action {
     }
     
     act(obj: any) {
-        util.inspect(obj)
+        console.log(obj)
     }
 }
