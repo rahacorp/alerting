@@ -43,4 +43,8 @@ export class Context {
 
         //return safeEval(val, this.ctx)
     }
+
+    public evaluate(val: string) {
+        return this.vm.run('return (' + val + ')')
+    }
 }

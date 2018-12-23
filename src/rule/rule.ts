@@ -1,28 +1,45 @@
 import { Context } from "../context/context";
 import { Trigger } from "../trigger/Trigger";
+import { Action } from "../action/action";
 
 export class Rule {
     context : Context
-    trigger : Trigger
+    triggers : Trigger[]
+    actions : Action[]
     inputs : Input[]
     pkg : string
     name : string
     description : string
+    condition: string
 
     constructor(name : string, description : string, pkg : string) {
         this.context = new Context()
         this.inputs = []
+        this.triggers = []
         this.name = name
         this.description = description
         this.pkg = pkg
     }
 
-    setTrigger(trigger : Trigger) {
-        this.trigger = trigger
+    setCondition(cond: string) {
+        this.condition = cond
+    }
+    addTrigger(trigger : Trigger) {
+        this.triggers.push(trigger)
     }
     
+    addAction(action: Action) {
+        this.actions.push(action)
+    }
+
     start() {
-        this.trigger.start()
+        if(this.triggers.length > 0) {
+            for(let trigger of this.triggers) {
+                trigger.start()
+            }
+        } else {
+            this.fire()
+        }
     }
 
     addInput(input: Input) {
@@ -33,8 +50,18 @@ export class Rule {
         console.log('fire in the hole')
         for(let input of this.inputs) {
             await input.execute()
+            console.log('input executed : ', input.name)
         }
-        this.context.print()
+        // this.context.print()
+        if(this.context.evaluate(this.condition)) {
+            console.log('eval true :', this.condition)
+            
+            for(let action of this.actions) {
+                action.act(this.name + ' matched')
+            }
+        } else {
+            console.log('condition did not met')
+        }
         console.log('done')
     }
 
