@@ -52,7 +52,7 @@ class Startup {
 
     static parseAction(action: any): Action {
         if (action.type == 'console') {
-            return new LogAction()
+            return new LogAction(action.name)
         } else {
             console.log('trigger type not supported :' + action.type)
             return null;
