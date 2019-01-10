@@ -1,5 +1,5 @@
 {
     "elasticConfig": {
-       "host": "elastic:9200"
+       "host": "elastic.raha.local:9200"
     }
 }
