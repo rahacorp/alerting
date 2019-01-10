@@ -31,6 +31,7 @@ export class PostProcessIterate implements PostProcess {
                     //console.log('iterate condition is false : ' + this.iterateCondition)
                 }
             }
+            this.context.set(this.iterateObjectName, {})
         }
     }
 }

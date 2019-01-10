@@ -9,6 +9,10 @@ import { Action } from './src/action/action';
 class Startup {
     public static main(file: string): number {
         let sampleRule = require(file)
+        console.log('name:', sampleRule.name)
+        console.log('description:', sampleRule.description)
+        console.log('package:', sampleRule.package)
+
         let myRule = new Rule(sampleRule.name, sampleRule.description, sampleRule.package)
 
         for (let trigger of sampleRule.triggers) {
@@ -37,6 +41,7 @@ class Startup {
                         }
                     }
                 }
+                console.log('added input ', input.name, input.type)
                 myRule.addInput(input)
             }
         }
@@ -59,7 +64,7 @@ class Startup {
         }
     }
 }
-console.log(process.argv)
+
 if(process.argv.length != 3) {
     console.log('usage: tsc main.ts rule_file_name.js')
     //

@@ -51,13 +51,14 @@ export class Rule {
 
     async fire() {
         console.log('fire in the hole')
+        console.log('executing inputs')
         for(let input of this.inputs) {
+            console.log('executing input', input.name)
             await input.execute()
-            console.log('input executed : ', input.name)
+            console.log('input executed')
             await input.postProcess()
-            console.log('post process done : ', input.name)
+            console.log('post process done')
         }
-        // this.context.print()
         if(this.context.evaluate(this.condition)) {
             //console.log('eval true :', this.condition)
             for(let action of this.actions) {
@@ -66,7 +67,9 @@ export class Rule {
         } else {
             console.log('condition did not met')
         }
-        console.log('done')
+        console.log('context: ')
+        this.context.print()
+        console.log('fire done', this.name)
     }
 
     getContext() : Context {
