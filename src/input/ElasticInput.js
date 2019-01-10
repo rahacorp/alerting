@@ -16,6 +16,7 @@ class ElasticInput {
         this.searchObj = searchObj;
         this.context = context;
         this.name = name;
+        this.postProcesses = [];
     }
     execute() {
         //this.context.
@@ -36,6 +37,17 @@ class ElasticInput {
                 reject(err);
             }
         }));
+    }
+    postProcess() {
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            for (let postProcess of this.postProcesses) {
+                postProcess.execute();
+                resolve();
+            }
+        }));
+    }
+    addPostProcess(postProcess) {
+        this.postProcesses.push(postProcess);
     }
 }
 exports.ElasticInput = ElasticInput;

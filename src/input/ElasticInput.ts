@@ -1,19 +1,23 @@
 import { ClientFactory } from "../clientFactory/ClientFactory";
-import {Context} from "../context/context"
+import { Context } from "../context/context"
+import { PostProcess } from "./PostProcess";
+import { Input } from "./Input";
 
 export class ElasticInput implements Input {
     client: any
     searchObj: any
     context: Context
-    name : string
-    type : string
+    name: string
+    type: string
+    postProcesses: PostProcess[]
 
-    constructor(searchObj: any, context: Context, name : string) {
+    constructor(searchObj: any, context: Context, name: string) {
         this.type = 'elastic'
         this.client = ClientFactory.createClient('elastic')
         this.searchObj = searchObj
         this.context = context
         this.name = name
+        this.postProcesses = []
     }
 
     execute() {
@@ -36,6 +40,20 @@ export class ElasticInput implements Input {
                 reject(err)
             }
         })
-        
+
     }
+
+    postProcess() {
+        return new Promise(async (resolve, reject) => {
+            for (let postProcess of this.postProcesses) {
+                postProcess.execute()
+                resolve()
+            }
+        })
+    }
+
+    addPostProcess(postProcess: PostProcess) {
+        this.postProcesses.push(postProcess)
+    }
+
 }

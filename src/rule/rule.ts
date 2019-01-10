@@ -1,6 +1,7 @@
 import { Context } from "../context/context";
 import { Trigger } from "../trigger/Trigger";
 import { Action } from "../action/action";
+import { Input } from "../input/Input";
 
 export class Rule {
     context : Context
@@ -53,6 +54,8 @@ export class Rule {
         for(let input of this.inputs) {
             await input.execute()
             console.log('input executed : ', input.name)
+            await input.postProcess()
+            console.log('post process done : ', input.name)
         }
         // this.context.print()
         if(this.context.evaluate(this.condition)) {
