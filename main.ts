@@ -7,11 +7,11 @@ import { PostProcessIterate } from './src/input/PostProcessIterate';
 import { Action } from './src/action/action';
 
 class Startup {
-    public static main(): number {
-        let lsassRule = require('./rules/lsass_dump.js')
-        let myRule = new Rule(lsassRule.name, lsassRule.description, lsassRule.package)
+    public static main(file: string): number {
+        let sampleRule = require(file)
+        let myRule = new Rule(sampleRule.name, sampleRule.description, sampleRule.package)
 
-        for (let trigger of lsassRule.triggers) {
+        for (let trigger of sampleRule.triggers) {
             if (trigger.type == 'time') {
                 myRule.addTrigger(new TimeTrigger(trigger.options.text, myRule))
             } else {
@@ -19,7 +19,7 @@ class Startup {
             }
         }
 
-        for (let ii of lsassRule.inputs) {
+        for (let ii of sampleRule.inputs) {
             let input: Input
 
             if (ii.type == 'elasticsearch') {
@@ -41,11 +41,11 @@ class Startup {
             }
         }
 
-        for (let action of lsassRule.actions) {
+        for (let action of sampleRule.actions) {
             myRule.addAction(Startup.parseAction(action))
         }
 
-        myRule.setCondition(lsassRule.condition)
+        myRule.setCondition(sampleRule.condition)
         myRule.start()
         return 0;
     }
@@ -59,5 +59,10 @@ class Startup {
         }
     }
 }
-
-Startup.main();
+console.log(process.argv)
+if(process.argv.length != 3) {
+    console.log('usage: tsc main.ts rule_file_name.js')
+    //
+} else {
+    Startup.main(process.argv[2])
+}

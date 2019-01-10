@@ -6,10 +6,10 @@ const ElasticInput_1 = require("./src/input/ElasticInput");
 const logAction_1 = require("./src/action/logAction");
 const PostProcessIterate_1 = require("./src/input/PostProcessIterate");
 class Startup {
-    static main() {
-        let lsassRule = require('./rules/lsass_dump.js');
-        let myRule = new rule_1.Rule(lsassRule.name, lsassRule.description, lsassRule.package);
-        for (let trigger of lsassRule.triggers) {
+    static main(file) {
+        let sampleRule = require(file);
+        let myRule = new rule_1.Rule(sampleRule.name, sampleRule.description, sampleRule.package);
+        for (let trigger of sampleRule.triggers) {
             if (trigger.type == 'time') {
                 myRule.addTrigger(new TimeTrigger_1.TimeTrigger(trigger.options.text, myRule));
             }
@@ -17,7 +17,7 @@ class Startup {
                 console.log('trigger type not supported :' + trigger.type);
             }
         }
-        for (let ii of lsassRule.inputs) {
+        for (let ii of sampleRule.inputs) {
             let input;
             if (ii.type == 'elasticsearch') {
                 input = new ElasticInput_1.ElasticInput(ii.request, myRule.context, ii.name);
@@ -38,10 +38,10 @@ class Startup {
                 myRule.addInput(input);
             }
         }
-        for (let action of lsassRule.actions) {
+        for (let action of sampleRule.actions) {
             myRule.addAction(Startup.parseAction(action));
         }
-        myRule.setCondition(lsassRule.condition);
+        myRule.setCondition(sampleRule.condition);
         myRule.start();
         return 0;
     }
@@ -55,5 +55,12 @@ class Startup {
         }
     }
 }
-Startup.main();
+console.log(process.argv);
+if (process.argv.length != 3) {
+    console.log('usage: tsc main.ts rule_file_name.js');
+    //
+}
+else {
+    Startup.main(process.argv[2]);
+}
 //# sourceMappingURL=main.js.map

@@ -9,6 +9,7 @@
             "request": "launch",
             "name": "Launch Program",
             "program": "${workspaceFolder}/main.ts",
+            "args": ["./rules/lsass_dump.js"],
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
             ]
