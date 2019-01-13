@@ -2,6 +2,7 @@ import { ClientFactory } from "../clientFactory/ClientFactory";
 import { Context } from "../context/context"
 import { PostProcess } from "./PostProcess";
 import { Input } from "./Input";
+import * as util from 'util'
 
 export class ElasticInput implements Input {
     client: any
@@ -33,6 +34,7 @@ export class ElasticInput implements Input {
                 // console.log('resp', response)
                 this.context.set('inputs.' + this.name + '.response', response)
                 console.log('response set')
+                console.log(util.inspect(response, false, 5))
                 resolve()
             } catch (err) {
                 console.log('err', err)

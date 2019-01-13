@@ -53,22 +53,23 @@ export class Rule {
         console.log('fire in the hole')
         console.log('executing inputs')
         for(let input of this.inputs) {
+            console.log('=======================================================')
             console.log('executing input', input.name)
             await input.execute()
-            console.log('input executed')
+            console.log('input executed    =====================================')
             await input.postProcess()
-            console.log('post process done')
+            console.log('post process done =====================================')
         }
         if(this.context.evaluate(this.condition)) {
-            //console.log('eval true :', this.condition)
+            console.log('eval true :', this.condition + "=======================")
             for(let action of this.actions) {
                 action.act(this.name + ' matched')
             }
         } else {
-            console.log('condition did not met')
+            console.log('condition did not met ---------------------------------')
         }
-        console.log('context: ')
-        this.context.print()
+        // console.log('context: ')
+        // this.context.print()
         console.log('fire done', this.name)
     }
 

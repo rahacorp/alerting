@@ -14,18 +14,20 @@ export class Context {
         this.vm = new NodeVM({
             sandbox: this.sandbox,
             require: {
-                external: ['flat'],
-                builtin: ['JSON']
+                external: ['flat', 'util'],
+                builtin: ['JSON', 'util']
             },
             wrapper: 'none'
         })
         this.vm.run('ctx = {}')
         this.vm.run('ctx.inputs = {}')
         this.vm.run('ctx.conditions = {}')
+        this.vm.run('var util = require("util")')
     }
 
     public print() {
-        console.log(this.vm.run('return ctx'))
+        console.log(util.inspect(this.vm.run('return ctx'), false, 10))
+        //this.vm.run('util.inspect(ctx)')
     }
 
     public set(addr : string, obj : any) {
