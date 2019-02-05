@@ -18,9 +18,11 @@
   "homepage": "https://github.com/alireza-ebrahimi/alerting#readme",
   "dependencies": {
     "@types/node": "^10.12.15",
+    "activedirectory2": "^1.2.7",
     "elasticsearch": "^15.2.0",
     "flat": "^4.1.0",
     "later": "^1.2.0",
+    "neo4j-driver": "^1.7.2",
     "safe-eval": "^0.4.1",
     "vm2": "^3.6.4"
   }

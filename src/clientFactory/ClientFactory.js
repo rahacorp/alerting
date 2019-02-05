@@ -11,6 +11,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const elastic = __importStar(require("elasticsearch"));
+const ActiveDirectory = __importStar(require("activedirectory2"));
+const neo4j_driver_1 = require("neo4j-driver");
 const config_json_1 = __importDefault(require("../../config.json"));
 class ClientFactory {
     static createClient(type) {
@@ -23,6 +25,16 @@ class ClientFactory {
         else {
             if (type === 'elastic') {
                 let client = new elastic.Client(config_json_1.default.elasticConfig);
+                ClientFactory.clients[type] = client;
+                return client;
+            }
+            else if (type === 'ldap') {
+                let client = ActiveDirectory.default(config_json_1.default.activeDirectory);
+                ClientFactory.clients[type] = client;
+                return client;
+            }
+            else if (type === 'neo4j') {
+                let client = neo4j_driver_1.v1.driver(config_json_1.default.neo4j.address, neo4j_driver_1.v1.auth.basic(config_json_1.default.neo4j.username, config_json_1.default.neo4j.password));
                 ClientFactory.clients[type] = client;
                 return client;
             }

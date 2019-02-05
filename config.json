@@ -1,5 +1,19 @@
 {
     "elasticConfig": {
-       "host": "elastic.raha.local:9200"
+        "host": "elastic.raha.local:9200"
+    },
+    "activeDirectory": {
+        "url": "ldap://d2012-dc1.raha.local",
+        "baseDN": "dc=raha2012,dc=local",
+        "username": "balaban@raha2012.local",
+        "password": "123qweQWE",
+        "attributes": {
+            "user": ["cn", "dn", "userPrinicipalName", "objectSid"]
+        }
+    },
+    "neo4j": {
+        "address": "bolt://kl.raha.local",
+        "username": "neo4j",
+        "password": "123qweQWE"
     }
 }

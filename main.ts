@@ -5,8 +5,18 @@ import { Input } from './src/input/Input'
 import { LogAction } from './src/action/logAction';
 import { PostProcessIterate } from './src/input/PostProcessIterate';
 import { Action } from './src/action/action';
+import { ADSynchronizer } from './src/webapp/ADSynchronizer';
 
 class Startup {
+
+    public static async main2() {
+        let adSync = new ADSynchronizer()
+        let grp = await adSync.syncAllGroups()
+        console.log(grp)
+        adSync.syncAllUsersAndGroups()
+        return 0
+    }
+
     public static main(file: string): number {
         let sampleRule = require(file)
         console.log('name:', sampleRule.name)
@@ -65,9 +75,12 @@ class Startup {
     }
 }
 
+Startup.main2()
+/*
 if(process.argv.length != 3) {
     console.log('usage: tsc main.ts rule_file_name.js')
     //
 } else {
     Startup.main(process.argv[2])
 }
+*/
