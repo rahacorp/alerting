@@ -24,6 +24,7 @@
     "later": "^1.2.0",
     "neo4j-driver": "^1.7.2",
     "safe-eval": "^0.4.1",
+    "string-format": "^2.0.0",
     "vm2": "^3.6.4"
   }
 }

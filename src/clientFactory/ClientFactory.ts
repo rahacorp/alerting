@@ -26,6 +26,11 @@ export class ClientFactory {
                 let client = neo4j.driver(config.neo4j.address, neo4j.auth.basic(config.neo4j.username, config.neo4j.password))
                 ClientFactory.clients[type] = client
                 return client
+            } else if (type === 'neo4j_session') {
+                let neo4jDriver = ClientFactory.createClient("neo4j")
+                let session = neo4jDriver.session()
+                ClientFactory.clients[type] = session
+                return session
             } else {
                 throw new Error('client type not supported :' + type)
             }

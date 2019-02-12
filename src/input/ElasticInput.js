@@ -32,8 +32,13 @@ class ElasticInput {
             try {
                 this.context.set('inputs.' + this.name, {});
                 let response = yield this.client.search({
-                    "body": this.searchObj
+                    "body": this.context.formatObject(this.searchObj)
                 });
+                if (response._shards.failed > 0) {
+                    console.log('err shards failed');
+                    this.context.set('inputs.' + this.name + '.error', response);
+                    return reject('shards failed');
+                }
                 // console.log('resp', response)
                 this.context.set('inputs.' + this.name + '.response', response);
                 console.log('response set');

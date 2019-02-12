@@ -3,20 +3,35 @@ import { TimeTrigger } from './src/trigger/TimeTrigger'
 import { ElasticInput } from './src/input/ElasticInput'
 import { Input } from './src/input/Input'
 import { LogAction } from './src/action/logAction';
-import { PostProcessIterate } from './src/input/PostProcessIterate';
+import * as fs from 'fs'
 import { Action } from './src/action/action';
 import { ADSynchronizer } from './src/webapp/ADSynchronizer';
+import { Context } from './src/context/context';
 
 class Startup {
 
     public static async main2() {
+        
+        // let filename = "C:/Users/alireza/Desktop/Programming/personal/rules/Windows/access_share_admin.js"
+        // let rule = Rule.fromFile(filename + 'on')
+        // rule.addToNeo4j()
+        let r = await Rule.fromDB('access_share_admin', 'ir.raha.share.access')
+        r.start()
+        return 0
+
+        // let sampleRule = require(filename)
+        // fs.writeFileSync(filename + 'on', JSON.stringify(sampleRule))
+        // rule.start()
+        return 0
+
         let adSync = new ADSynchronizer()
-        let grp = await adSync.syncAllGroups()
-        console.log(grp)
+        // let grp = await adSync.syncAllGroups()
+        // console.log(grp)
         adSync.syncAllUsersAndGroups()
+        // adSync.syncAllComputers()
         return 0
     }
-
+/*
     public static main(file: string): number {
         let sampleRule = require(file)
         console.log('name:', sampleRule.name)
@@ -64,7 +79,7 @@ class Startup {
         myRule.start()
         return 0;
     }
-
+*/
     static parseAction(action: any): Action {
         if (action.type == 'console') {
             return new LogAction(action.name)

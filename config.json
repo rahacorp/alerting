@@ -8,7 +8,7 @@
         "username": "balaban@raha2012.local",
         "password": "123qweQWE",
         "attributes": {
-            "user": ["cn", "dn", "userPrinicipalName", "objectSid"]
+            "user": ["cn", "dn", "userPrincipalName", "objectSid", "sAMAccountName"]
         }
     },
     "neo4j": {

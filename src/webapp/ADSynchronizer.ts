@@ -1,6 +1,14 @@
 import { ClientFactory } from "../clientFactory/ClientFactory";
 
 export class ADSynchronizer {
+
+	/*
+	remove all nodes
+	MATCH (r)-[l:MEMBER_OF]->(b) DELETE l
+	MATCH (r:ADUser) DELETE r
+	MATCH (r:ADGroup) DELETE r
+	MATCH (r:ADComputer) DELETE r
+	*/
 	//this class reads users, computers, and groups date from ldap and creates/updates graph in neo4j based on ldap data
 	domainName: string;
 	ldapClient: any;
@@ -44,6 +52,41 @@ export class ADSynchronizer {
 		});
 	}
 
+	public syncAllComputers() {
+		let synchronizer = this
+		synchronizer.ldapClient.find({
+			filter: "(objectCategory=computer)",
+			attributes: ["cn", "dn", "operatingSystem", "objectSid", "description", "dNSHostName", "operatingSystemServicePack", "operatingSystemVersion", "name"]
+		}, (err, computers) => {
+			if (err) {
+				console.log(`ERROR: ${JSON.stringify(err)}`);
+				return;
+			}
+
+			if (!computers || computers.length === 0) {
+				console.log("No computers found.");
+			} else {
+				console.log(computers)
+				for (let computer of computers.other) {
+					console.log(computer);
+					
+					synchronizer.neo4jSession
+						.run(
+							"MERGE (computer:ADComputer {dn : {dn} }) ON CREATE SET computer.cn = {cn}, computer.objectSid = {objectSid}, computer.dNSHostName = {dNSHostName}, " + 
+							"computer.operatingSystem = {operatingSystem}, computer.operatingSystemVersion = {operatingSystemVersion}",
+							computer
+						)
+						.then(function(result) {
+							console.log(result.summary.counters._stats);
+						})
+						.catch(function(error) {
+							console.log(error);
+						});
+				}
+			}
+		})
+	}
+
 	public syncAllUsersAndGroups() {
 		let synchronizer = this
 		synchronizer.ldapClient.findUsers("cn=*", true, (err, users) => {
@@ -57,9 +100,17 @@ export class ADSynchronizer {
 			} else {
 				for (let user of users) {
 					console.log(user);
+					if (user.userPrincipalName) {
+						let domainName =  user.userPrincipalName.split('@')[1].split('.')[0]
+						user.logonName = domainName.toUpperCase() + '\\' + user.sAMAccountName
+					} else {
+						let domainName = user.dn.split(',DC=')[1]
+						user.logonName = domainName.toUpperCase() + '\\' + user.sAMAccountName
+					}
+					
 					synchronizer.neo4jSession
 						.run(
-							"MERGE (user:ADUser {dn : {dn} }) ON CREATE SET user.cn = {cn}, user.objectSid = {objectSid}",
+							"MERGE (user:ADUser {dn : {dn} }) ON CREATE SET user.cn = {cn}, user.objectSid = {objectSid}, user.logonName = {logonName}",
 							user
 						)
 						.then(function(result) {
@@ -82,7 +133,7 @@ export class ADSynchronizer {
 									})
 									.catch(function(error) {
 										console.log(error);
-									});;
+									})
 								}
 							}
 						})
