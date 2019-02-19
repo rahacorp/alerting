@@ -215,17 +215,51 @@ export class Rule {
 		return this.context;
 	}
 
-	addToNeo4j() {
+
+	static removeFromNeo4j(pkg: string, name: string, force: boolean) {
+		let q = 'MATCH (r:Rule) WHERE r.package =~ {pkg} AND r.name =~ {name} DELETE r'
+		if(force) {
+			q = 'MATCH (r:Rule) WHERE r.package =~ {pkg} AND r.name =~ {name} DETACH DELETE r'
+		}
 		return new Promise((resolve, reject) => {
             let neo4jDriver = ClientFactory.createClient("neo4j")
-            let session = neo4jDriver.session()
+			let session = neo4jDriver.session()
 			session
 				.run(
-					"MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON CREATE SET rule.data = {data}",
+					q,
+					{
+                        name: name,
+                        pkg: pkg,
+                    }
+				)
+				.then(function(result) {
+                    console.log(result.summary.counters._stats);
+                    session.close()
+				})
+				.catch(function(error) {
+					return reject(error);
+				});
+		});
+	}
+	addToNeo4j(update: boolean, lastSuccessTime: string) {
+		return new Promise((resolve, reject) => {
+            let neo4jDriver = ClientFactory.createClient("neo4j")
+			let session = neo4jDriver.session()
+			let q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON CREATE SET rule.data = {data}"
+			if(update) {
+				q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON MATCH SET rule.data = {data}"
+				if(lastSuccessTime) {
+					q += ", rule.last_successful_check = {lastSuccess}"
+				}
+			}
+			session
+				.run(
+					q,
 					{
                         ruleName: this.name,
                         rulePackage: this.pkg,
-                        data: this.data
+						data: this.data,
+						lastSuccess: lastSuccessTime
                     }
 				)
 				.then(function(result) {
