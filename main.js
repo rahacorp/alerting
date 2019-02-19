@@ -54,6 +54,7 @@ class Startup {
                 let r = yield rule_1.Rule.fromDB(ruleName, pkg);
                 r.start();
             }
+            console.log('happy sarbazi');
         });
     }
     static addFileToDB(path, update, lastTime) {

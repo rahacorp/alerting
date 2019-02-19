@@ -40,6 +40,7 @@ class Startup {
 		    r.start();
         }
 
+        // console.log('happy sarbazi')
     }
 
     static addFileToDB(path: string, update: boolean, lastTime: string) {
