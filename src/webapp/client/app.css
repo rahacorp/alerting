@@ -1,0 +1,175 @@
+h1 {
+  color: green;
+}
+
+body {
+  font-family: 'Titillium Web', sans-serif;
+  margin: auto;
+  overflow: hidden
+}
+
+
+/*
+https://coolors.co/003049-d62828-f77f00-fcbf49-eae2b7 color pallete
+#003049
+#d62828
+#f77f00
+#fcbf49
+#eae2b7
+*/
+#test-colors {
+  background-color: #003049;
+  background-color: #d62828;
+  background-color: #f77f00;
+  background-color: #fcbf49;
+  background-color: #eae2b7;
+}
+
+#sidebar {
+  background-color: #d62828;
+  position: fixed;
+}
+
+#detail {
+  text-align: center;
+  position: absolute;
+  top: 0px;
+  bottom: 0;
+  left: 0;
+  width: 350px;
+  background-color: #eae2b7;
+  padding: 20px;
+}
+
+.mdc-top-app-bar__row {
+  background-color: black
+}
+
+#detail>svg {
+  margin-top: 30%;
+}
+
+#detail>span>svg {
+  margin-right: 8px;
+}
+
+.Pane2 {
+  background-color: #003049;
+  overflow: scroll;
+
+}
+
+.react-tabs__tab {
+  color: #eae2b7;
+}
+
+#tabs>div>ul>.react-tabs__tab--selected {
+  background: #01293f;
+  color: #eae2b7;
+}
+
+.SplitPane {
+  margin-top: 64px;
+  margin-left: 64px;
+  position: relative;
+}
+
+#mainPanel {
+  margin-top: 64px;
+  margin-left: 64px;
+  display: flex;
+  flex: 1 1 0%;
+  height: 100%;
+  position: absolute;
+  outline: currentcolor none medium;
+  overflow: scroll;
+  -moz-user-select: text;
+  flex-direction: row;
+  left: 0px;
+  right: 0px;
+  background-color: #eae2b7;
+  padding: 30px;
+}
+
+.Pane {
+  padding: 20px;
+
+}
+
+.logTableGeneral > div {
+  display: block;
+}
+
+.logTableGeneral > div {
+  width: 100%;
+  overflow-x: hidden
+}
+
+.logTableGeneral {
+  margin-bottom: 110px;
+  overflow-x: hidden !important;
+  overflow-y: hidden;
+  width: 100%
+}
+
+.logTable {
+  color: #eae2b7;
+}
+
+.logTable .sc-bZQynM {
+  color: #eae2b7 !important;
+}
+
+.logTable .sc-VigVT > div{
+  color: #bdb485
+}
+
+.logTable > div > nav span{
+  color: #eae2b7 !important;
+}
+
+.logTable select{
+  color: #eae2b7 !important;
+}
+
+.logTable svg{
+  fill: #bdb485 !important;
+}
+
+.logTable .react-json-view {
+  margin-left: 64px;
+  background: #003049;
+}
+
+.logTable .object-content {
+  background: #003049;
+  /* padding-left: 64px; */
+}
+
+
+.buy-button {
+  display: none;
+}
+
+.price-tag { display: none}
+
+.dummydiv {
+  width: calc(20% - 50px)
+}
+
+#mainPanel > .product-card {
+  margin: auto;
+  top: -20%;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 400px;
+  height: 150px;
+  min-height: 170px;
+  text-align: center;
+}
+
+#mainPanel .product-card-gallery {
+  display: none;
+  height: 0px;
+}

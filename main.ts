@@ -1,13 +1,16 @@
 import { Rule } from "./src/rule/rule";
-import { TimeTrigger } from "./src/trigger/TimeTrigger";
-import { ElasticInput } from "./src/input/ElasticInput";
-import { Input } from "./src/input/Input";
 import { LogAction } from "./src/action/logAction";
 import * as fs from "fs";
 import { Action } from "./src/action/action";
 import { ADSynchronizer } from "./src/webapp/ADSynchronizer";
-import { Context } from "./src/context/context";
-import * as readlineSync from "readline-sync";
+import * as util from "util";
+import express from 'express';
+
+import {ApiController} from './src/webapp/Controllers'
+
+const app: express.Application = express();
+const port: number = parseInt(process.env.PORT) || 8080;
+app.use(express.static('dist'));
 
 class Startup {
 
@@ -39,7 +42,6 @@ class Startup {
             let r = await Rule.fromDB(ruleName, pkg);
 		    r.start();
         }
-
         // console.log('happy sarbazi')
     }
 
@@ -52,18 +54,87 @@ class Startup {
     }
 	public static async main2() {
 
-        while(true) {
-            var cmd = readlineSync.question('enter help for help > ');
-            if(cmd === 'exit') {
-                console.log('bye')
-                break;
-            } else if(cmd === 'help') {
-                console.log('help no help')
+		let filename = "C:/Users/alireza/Desktop/Programming/personal/rules/Windows/detect_execute_commad_schtask.js"
+        let sampleRuler = require(filename)
+        let sampleRule = JSON.parse(JSON.stringify(sampleRuler))
+        let myAction = {
+            "type": "alert",
+            "name": "alert_iterate",
+            "relations": {
+                "ADUser": [
+                    {
+                        "field": "logonName",
+                        "value": "{my_hit._source.event_data.SubjectDomainName}\\{my_hit._source.event_data.SubjectUserName}"
+                    }
+                ],
+                "ADComputer": [
+                    {
+                        "field": "dNSHostName",
+                        "value": "{my_hit._source.computer_name}"
+                    }
+                ]
             }
-
         }
-		let filename = "C:/Users/alireza/Desktop/Programming/personal/rules/Windows/access_share_admin.js"
-		let sampleRule = require(filename)
+        for(let input of sampleRule.inputs) {
+            if(input.type == 'elasticsearch') {
+                if(input.request.query.query_string) {
+                    let qs = JSON.parse(JSON.stringify(input.request.query))
+                    input.request.query = {
+                        "bool": {
+                            "must": [qs,
+                                {
+                                    "range": {
+                                        "@timestamp": {
+                                            "gte": "{last_successful_check}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                } else if(input.request.query.bool && input.request.query.bool.must) {
+                    let qs = JSON.parse(JSON.stringify(input.request.query.bool.must[0]))
+                    input.request.query = {
+                        "bool": {
+                            "must": [qs,
+                                {
+                                    "range": {
+                                        "@timestamp": {
+                                            "gte": "{last_successful_check}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                } else {
+                    console.log('error it ', input.request.query.sdfs.fsd)
+                }
+                
+                // if(input.post_process && input.post_process.action.type == 'console') {
+                //     input.post_process.action = myAction
+                // }
+
+                for(let i = 0; i < input.post_process.length; i++) {
+                    let pp = input.post_process[i]
+                    if(pp.action.type && pp.action.type == 'console') {
+                        input.post_process[i].action = myAction
+                    }
+                }
+            }
+        }
+
+        if(sampleRule.condition == 'false') {
+            sampleRule.actions = []
+        } else {
+            for(let i = 0; i < sampleRule.actions.length; i++) {
+                let action = sampleRule.actions[i]
+                if(action.type && action.type == 'console') {
+                    sampleRule.actions[i] = myAction
+                }
+            }
+        }
+        console.log(util.inspect(sampleRule, false, 10))
 		fs.writeFileSync(filename + 'on', JSON.stringify(sampleRule))
         return 0;
 		// let rule = Rule.fromFile(filename + 'on')
@@ -155,11 +226,21 @@ class Startup {
 }
 
 // Startup.main2();
+
+
+
+
+
 console.log(process.argv)
 
 if(process.argv.length < 3) {
-    Startup.printHelp()
+    app.use('/api', ApiController);
+    app.listen(port, () => {
+        console.log(`Listening at http://localhost:${port}/`);
+});
 } else {
+    if(process.argv[2] == '-help') {
+        Startup.printHelp()
+    }
     Startup.main3(process.argv.slice(2))
 }
-
