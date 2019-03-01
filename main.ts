@@ -36,6 +36,12 @@ class Startup {
             let ruleName = args[2]
             let r = await Rule.fromDB(ruleName, pkg);
             await r.addToNeo4j(true, args[3])
+        } else if(args[0] === 'adsync') {
+            let adSync = new ADSynchronizer();
+            let grp = await adSync.syncAllGroups()
+            console.log(grp)
+            adSync.syncAllUsersAndGroups();
+            adSync.syncAllComputers()
         } else if(args[0] === 'run') {
             let pkg = args[1]
             let ruleName = args[2]
@@ -211,6 +217,7 @@ class Startup {
         "remove {rule_package} {rule_name} [-force]: removes rules from db (you can use regexp like: remove rule .* .*), -force deletes rule with its alerts \n" +
         "set_last_run {rule_package} {rule_name} {last_run_time}: sets last success run of rule to provided date and time \n" +
         "run {rule_package} {rule_name}: runs the rule, sry you cant use regexp here \n" + 
+        "adsync [--only-computers] [--only-users]:: syncs db with active directory \n" + 
         "start: runs all rules priodically"
         console.log(help)
     }

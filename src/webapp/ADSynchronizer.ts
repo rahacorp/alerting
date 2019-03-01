@@ -14,11 +14,13 @@ export class ADSynchronizer {
 	ldapClient: any;
 	neo4jClient: any;
 	neo4jSession: any;
+	groupsAdded: boolean;
 
 	constructor() {
 		this.ldapClient = ClientFactory.createClient("ldap");
 		this.neo4jClient = ClientFactory.createClient("neo4j");
 		this.neo4jSession = this.neo4jClient.session();
+		this.groupsAdded = false
 	}
 
 	public syncAllGroups() {
@@ -40,6 +42,11 @@ export class ADSynchronizer {
 								group
 							)
 							.then(function(result) {
+								if (
+									result.summary.counters._stats.nodesCreated == 1
+								) {
+									synchronizer.groupsAdded = true
+								}
 								console.log(group.cn, result.summary.counters._stats);
 							})
 							.catch(function(error) {
@@ -116,7 +123,7 @@ export class ADSynchronizer {
 						.then(function(result) {
 							console.log(result.summary.counters._stats);
 							if (
-								result.summary.counters._stats.nodesCreated == 1
+								result.summary.counters._stats.nodesCreated == 1 || synchronizer.groupsAdded
 							) {
 								//adding groups
 								for (let group of user.groups) {
