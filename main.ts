@@ -12,6 +12,7 @@ import { ApiController } from "./src/webapp/Controllers";
 const app: express.Application = express();
 const port: number = parseInt(process.env.PORT) || 8080;
 app.use(express.static("dist"));
+app.use(express.static("public"));
 
 class Startup {
 	public static async main3(args) {
