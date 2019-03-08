@@ -163,6 +163,7 @@ export class Rule {
 	}
 
 	async fire() {
+		let lastTimeDateStr = new Date(Date.now() - 20000).toISOString() //20 seconds before now, for 'rahati-e ghalb :)'
 		console.log("fire in the hole: " + this.name);
 		console.log("executing inputs");
 		for (let input of this.inputs) {
@@ -199,12 +200,14 @@ export class Rule {
 		}
 		// console.log('context: ')
         // this.context.print()
-        this.setLastSuccessTime()
+        this.setLastSuccessTime(lastTimeDateStr)
 		console.log("fire done", this.name);
     }
     
-    private setLastSuccessTime() {
-        let dateStr = new Date().toISOString()
+    private setLastSuccessTime(dateStr?: string) {
+		if(!dateStr) {
+			dateStr = new Date().toISOString()
+		}
         this.context.set('last_successful_check', dateStr)
         let session = ClientFactory.createClient("neo4j_session")
         session.run('MATCH (n:Rule {name: {ruleName} , package: {pkgName}}) SET n.last_successful_check = {last_successful_check}', {ruleName: this.name, pkgName: this.pkg, last_successful_check: dateStr})

@@ -49,7 +49,8 @@ class Startup {
 			let pkg = args[1];
 			let ruleName = args[2];
 			console.log("removing", pkg, ruleName, args[3]);
-			Rule.removeFromNeo4j(pkg, ruleName, args[3] === "-force");
+			await Rule.removeFromNeo4j(pkg, ruleName, args[3] === "-force");
+			process.exit();
 		} else if (args[0] === "set_last_run") {
 			let pkg = args[1];
 			let ruleName = args[2];
@@ -296,6 +297,14 @@ class Startup {
 		}
 	}
 
+	static sleep(ms: number) {
+		return new Promise((resolve, reject) => {
+			setTimeout(() => {
+				resolve()
+			}, ms);
+		})
+	}
+
 	static async runAllRulesPriodically() {
 		let allRules = await Rule.list() 
 		while (true) {
@@ -304,6 +313,8 @@ class Startup {
 				console.log(ruleName)
 				await allRules.get(ruleName).fire()
 			}
+			console.log('::end running all rules::')
+			await Startup.sleep(30 * 1000)
 		}
 	}
 }
@@ -316,6 +327,7 @@ if (process.argv.length < 3) {
 	app.use("/api", ApiController);
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
+		Startup.runAllRulesPriodically()
 	});
 } else {
 	if (process.argv[2] == "-help") {
