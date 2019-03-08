@@ -156,7 +156,19 @@ export default class LogSearch extends Component {
 			if(exp.expressions) {
 				q += (exp.conditionType ? ' ' + exp.conditionType + ' ' : '') + '' + '(' + this.parseExpression(exp.expressions) + ')'
 			} else {
-				q += (exp.conditionType ? ' ' + exp.conditionType + ' ' : '') + '' + exp.category + exp.operator + this.getValue(exp.value)
+				let categoryOperatorValue = ''
+				if(exp.operator == '==') {
+					categoryOperatorValue = exp.category + ':' + this.getValue(exp.value)
+				} else if(exp.operator == '!=') {
+					categoryOperatorValue = '-' + exp.category + ':' + this.getValue(exp.value)
+				} else if(exp.operator == 'startsWith') {
+					categoryOperatorValue = exp.category + ':*' + this.getValue(exp.value)
+				} else if(exp.operator == 'contains') {
+					categoryOperatorValue = exp.category + ':*' + this.getValue(exp.value) + '*'
+				} else if(exp.operator == '!contains') {
+					categoryOperatorValue = '-' + exp.category + ':*' + this.getValue(exp.value) + '*'
+				}
+				q += (exp.conditionType ? ' ' + exp.conditionType + ' ' : '') + '' + categoryOperatorValue
 			}
 		}
 		return q
@@ -222,7 +234,7 @@ export default class LogSearch extends Component {
 					data={[]}
 					options={this.options}
 					onParseOk={this.onParseOk.bind(this)}
-					// autoCompleteHandler = {this.customAutoComplete}
+					autoCompleteHandler = {this.customAutoComplete}
 				/>
 				<DataTable
 					className={this.props.className || "logTable logTableGeneral"}
@@ -321,20 +333,10 @@ class CustomAutoComplete extends GridDataAutoCompleteHandler {
 
     // override this method to add new your operator
     needOperators(parsedCategory) {
+		// return [":"]
         var result = super.needOperators(parsedCategory);
         return result.concat(["startsWith"]);
 	}
 	
-	async needValues(parsedCategory, parsedOperator) {
-		// parsedCategory = this.tryToGetFieldCategory(parsedCategory);
-		try {
-			let resp = await fetch('/api/suggest?field=event_data.User&prefix=r')
-			let parsed = await resp.json()
-			console.log(parsed)
-		} catch (err) {
-			console.log(err)
-		}
-        return ['haha', '22'];
-    }
 }
 
