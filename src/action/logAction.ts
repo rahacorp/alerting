@@ -7,7 +7,7 @@ export class LogAction implements Action {
         this.name = name
     }
     
-    act(obj: any, sourceID: string, relations: any, rule: Rule) {
-        console.log('[' + this.name + ']', obj)
+    async act(obj: any, sourceID: string, relations: any, rule: Rule) {
+        return '[' + this.name + ']', obj
     }
 }

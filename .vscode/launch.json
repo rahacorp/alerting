@@ -9,7 +9,9 @@
             "request": "launch",
             "name": "Launch Program",
             "program": "${workspaceFolder}/main.ts",
-            "args": ["./rules/lsass_dump.js"],
+            // "args": ["list"],
+            "args": ["run"],
+            // "args": ["add", "C:\\Users\\alireza\\Desktop\\Programming\\personal\\rules\\jsonRule"],
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
             ]

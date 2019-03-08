@@ -50,6 +50,7 @@ export class ADSynchronizer {
 								console.log(group.cn, result.summary.counters._stats);
 							})
 							.catch(function(error) {
+								console.error(error)
 								return reject(error);
 							});
 					}

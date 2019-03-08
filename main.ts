@@ -1,156 +1,221 @@
 import { Rule } from "./src/rule/rule";
 import { LogAction } from "./src/action/logAction";
 import * as fs from "fs";
+import * as path from "path";
 import { Action } from "./src/action/action";
 import { ADSynchronizer } from "./src/webapp/ADSynchronizer";
 import * as util from "util";
-import express from 'express';
+import express from "express";
 
-import {ApiController} from './src/webapp/Controllers'
+import { ApiController } from "./src/webapp/Controllers";
 
 const app: express.Application = express();
 const port: number = parseInt(process.env.PORT) || 8080;
-app.use(express.static('dist'));
+app.use(express.static("dist"));
 
 class Startup {
+	public static async main3(args) {
+		if (args[0] === "add" || args[0] === "update") {
+			let pathStr = args[1];
+			let update = args[0] === "update";
+			if (fs.lstatSync(pathStr).isDirectory()) {
+				console.log("processing directory :" + pathStr);
+				let promises = [];
+				fs.readdirSync(pathStr).forEach(file => {
+					promises.push(
+						Startup.addFileToDB(
+							path.join(pathStr, file),
+							update,
+							args[2]
+						)
+					);
+				});
+				Promise.all(promises)
+					.then(results => {
+						console.log("promises done");
+						for (let res of results) {
+							console.log(res);
+						}
+						process.exit();
+					})
+					.catch(error => {
+						console.log(error.message);
+					});
+			} else if (fs.lstatSync(pathStr).isFile()) {
+				await Startup.addFileToDB(pathStr, update, args[2]);
+				process.exit();
+			}
+		} else if (args[0] === "remove") {
+			let pkg = args[1];
+			let ruleName = args[2];
+			console.log("removing", pkg, ruleName, args[3]);
+			Rule.removeFromNeo4j(pkg, ruleName, args[3] === "-force");
+		} else if (args[0] === "set_last_run") {
+			let pkg = args[1];
+			let ruleName = args[2];
+			let r = await Rule.fromDB(ruleName, pkg);
+			await r.addToNeo4j(true, args[3]);
+		} else if (args[0] === "adsync") {
+			let adSync = new ADSynchronizer();
+			let grp = await adSync.syncAllGroups();
+			console.log(grp);
+			adSync.syncAllUsersAndGroups();
+			adSync.syncAllComputers();
+		} else if (args[0] === "run") {
+			let pkg = args[1];
+			let ruleName = args[2];
+			let allRules = await Rule.list(pkg, ruleName) 
+			let promises = []
 
-    public static async main3(args) {
-        if(args[0] === 'add' || args[0] === 'update') {
-            let path = args[1]
-            let update = args[0] === 'update'
-            if(fs.lstatSync(path).isDirectory()) {
-                console.log('processing directory :' + path)
-                fs.readdirSync(path).forEach(file => {
-                    Startup.addFileToDB(file, update, args[2]);
-                });
-            } else if(fs.lstatSync(path).isFile()) {
-                Startup.addFileToDB(path, update, args[2]);
-            }
-        } else if(args[0] === 'remove') {
-            let pkg = args[1]
-            let ruleName = args[2]
-            console.log('removing', pkg, ruleName, args[3])
-            Rule.removeFromNeo4j(pkg, ruleName, args[3] === '-force')
-        } else if(args[0] === 'set_last_run') {
-            let pkg = args[1]
-            let ruleName = args[2]
-            let r = await Rule.fromDB(ruleName, pkg);
-            await r.addToNeo4j(true, args[3])
-        } else if(args[0] === 'adsync') {
-            let adSync = new ADSynchronizer();
-            let grp = await adSync.syncAllGroups()
-            console.log(grp)
-            adSync.syncAllUsersAndGroups();
-            adSync.syncAllComputers()
-        } else if(args[0] === 'run') {
-            let pkg = args[1]
-            let ruleName = args[2]
-            let r = await Rule.fromDB(ruleName, pkg);
-		    r.start();
-        }
-        // console.log('happy sarbazi')
-    }
+			/*
+			allRules.forEach(rule => {
+				promises.push(rule.fire())
+			})
+			Promise.all(promises)
+				.then(results => {
+					console.log("promises done");
+					for (let res of results) {
+						console.log(res);
+					}
+					process.exit();
+				})
+				.catch(error => {
+					console.error(error);
+					process.exit();
+				});
+			*/
+			for(let ruleName of Array.from(allRules.keys())) {
+				console.log(ruleName)
+				await allRules.get(ruleName).fire()
+				console.log('fire await done')
+			}
+			process.exit();
+		} else if (args[0] === "list") {
+			let allRules = await Rule.list(args[1], args[2]) 
+			for(let ruleName of Array.from(allRules.keys())) {
+				console.log(ruleName)
+			}
+			process.exit();
+		} 
+		// console.log('happy sarbazi')
+	}
 
-    static addFileToDB(path: string, update: boolean, lastTime: string) {
-        if(path.toLowerCase().endsWith('.json')) {
-            console.log('add to db ', path, update, lastTime)
-            let rule = Rule.fromFile(path)
-            rule.addToNeo4j(update, lastTime)
-        }
-    }
+	static addFileToDB(path: string, update: boolean, lastTime: string) {
+		return new Promise(async (resolve, reject) => {
+			if (path.toLowerCase().endsWith(".json")) {
+				console.log("add to db ", path, update, lastTime);
+				let rule = Rule.fromFile(path);
+				try {
+					let res = await rule.addToNeo4j(update, lastTime) 
+					resolve(res);
+				} catch (err) {
+					console.error(err)
+					reject(err);
+				}
+			} else {
+				reject(new Error("file is not .json"));
+			}
+		});
+	}
 	public static async main2() {
+		let filename =
+			"C:/Users/alireza/Desktop/Programming/personal/rules/Windows/detect_execute_commad_schtask.js";
+		let sampleRuler = require(filename);
+		let sampleRule = JSON.parse(JSON.stringify(sampleRuler));
+		let myAction = {
+			type: "alert",
+			name: "alert_iterate",
+			relations: {
+				ADUser: [
+					{
+						field: "logonName",
+						value:
+							"{my_hit._source.event_data.SubjectDomainName}\\{my_hit._source.event_data.SubjectUserName}"
+					}
+				],
+				ADComputer: [
+					{
+						field: "dNSHostName",
+						value: "{my_hit._source.computer_name}"
+					}
+				]
+			}
+		};
+		for (let input of sampleRule.inputs) {
+			if (input.type == "elasticsearch") {
+				if (input.request.query.query_string) {
+					let qs = JSON.parse(JSON.stringify(input.request.query));
+					input.request.query = {
+						bool: {
+							must: [
+								qs,
+								{
+									range: {
+										"@timestamp": {
+											gte: "{last_successful_check}"
+										}
+									}
+								}
+							]
+						}
+					};
+				} else if (
+					input.request.query.bool &&
+					input.request.query.bool.must
+				) {
+					let qs = JSON.parse(
+						JSON.stringify(input.request.query.bool.must[0])
+					);
+					input.request.query = {
+						bool: {
+							must: [
+								qs,
+								{
+									range: {
+										"@timestamp": {
+											gte: "{last_successful_check}"
+										}
+									}
+								}
+							]
+						}
+					};
+				} else {
+					console.log("error it ", input.request.query.sdfs.fsd);
+				}
 
-		let filename = "C:/Users/alireza/Desktop/Programming/personal/rules/Windows/detect_execute_commad_schtask.js"
-        let sampleRuler = require(filename)
-        let sampleRule = JSON.parse(JSON.stringify(sampleRuler))
-        let myAction = {
-            "type": "alert",
-            "name": "alert_iterate",
-            "relations": {
-                "ADUser": [
-                    {
-                        "field": "logonName",
-                        "value": "{my_hit._source.event_data.SubjectDomainName}\\{my_hit._source.event_data.SubjectUserName}"
-                    }
-                ],
-                "ADComputer": [
-                    {
-                        "field": "dNSHostName",
-                        "value": "{my_hit._source.computer_name}"
-                    }
-                ]
-            }
-        }
-        for(let input of sampleRule.inputs) {
-            if(input.type == 'elasticsearch') {
-                if(input.request.query.query_string) {
-                    let qs = JSON.parse(JSON.stringify(input.request.query))
-                    input.request.query = {
-                        "bool": {
-                            "must": [qs,
-                                {
-                                    "range": {
-                                        "@timestamp": {
-                                            "gte": "{last_successful_check}"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                } else if(input.request.query.bool && input.request.query.bool.must) {
-                    let qs = JSON.parse(JSON.stringify(input.request.query.bool.must[0]))
-                    input.request.query = {
-                        "bool": {
-                            "must": [qs,
-                                {
-                                    "range": {
-                                        "@timestamp": {
-                                            "gte": "{last_successful_check}"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                } else {
-                    console.log('error it ', input.request.query.sdfs.fsd)
-                }
-                
-                // if(input.post_process && input.post_process.action.type == 'console') {
-                //     input.post_process.action = myAction
-                // }
+				// if(input.post_process && input.post_process.action.type == 'console') {
+				//     input.post_process.action = myAction
+				// }
 
-                for(let i = 0; i < input.post_process.length; i++) {
-                    let pp = input.post_process[i]
-                    if(pp.action.type && pp.action.type == 'console') {
-                        input.post_process[i].action = myAction
-                    }
-                }
-            }
-        }
+				for (let i = 0; i < input.post_process.length; i++) {
+					let pp = input.post_process[i];
+					if (pp.action.type && pp.action.type == "console") {
+						input.post_process[i].action = myAction;
+					}
+				}
+			}
+		}
 
-        if(sampleRule.condition == 'false') {
-            sampleRule.actions = []
-        } else {
-            for(let i = 0; i < sampleRule.actions.length; i++) {
-                let action = sampleRule.actions[i]
-                if(action.type && action.type == 'console') {
-                    sampleRule.actions[i] = myAction
-                }
-            }
-        }
-        console.log(util.inspect(sampleRule, false, 10))
-		fs.writeFileSync(filename + 'on', JSON.stringify(sampleRule))
-        return 0;
+		if (sampleRule.condition == "false") {
+			sampleRule.actions = [];
+		} else {
+			for (let i = 0; i < sampleRule.actions.length; i++) {
+				let action = sampleRule.actions[i];
+				if (action.type && action.type == "console") {
+					sampleRule.actions[i] = myAction;
+				}
+			}
+		}
+		console.log(util.inspect(sampleRule, false, 10));
+		fs.writeFileSync(filename + "on", JSON.stringify(sampleRule));
+		return 0;
 		// let rule = Rule.fromFile(filename + 'on')
 		// rule.addToNeo4j()
 		let r = await Rule.fromDB("access_share_admin", "ir.raha.share.access");
 		r.start();
-        return 0;
-        
-        
-        
+		return 0;
+
 		// rule.start()
 		return 0;
 
@@ -211,16 +276,16 @@ class Startup {
     }
 */
 
-    static printHelp() {
-        let help = "add {file/directory_of_files}: add rules to db \n" + 
-        "update {file/directory_of_files} [time]: updates rules in db, with [time] sets last successful run to [time] like 2019-02-15T20:54:18.999Z \n" + 
-        "remove {rule_package} {rule_name} [-force]: removes rules from db (you can use regexp like: remove rule .* .*), -force deletes rule with its alerts \n" +
-        "set_last_run {rule_package} {rule_name} {last_run_time}: sets last success run of rule to provided date and time \n" +
-        "run {rule_package} {rule_name}: runs the rule, sry you cant use regexp here \n" + 
-        "adsync [--only-computers] [--only-users]:: syncs db with active directory \n" + 
-        "start: runs all rules priodically"
-        console.log(help)
-    }
+	static printHelp() {
+		let help =
+			"add {file/directory_of_files}: add rules to db \n" +
+			"update {file/directory_of_files} [time]: updates rules in db, with [time] sets last successful run to [time] like 2019-02-15T20:54:18.999Z \n" +
+			"remove {rule_package} {rule_name} [-force]: removes rules from db (you can use regexp like: remove rule .* .*), -force deletes rule with its alerts \n" +
+			"set_last_run {rule_package} {rule_name} {last_run_time}: sets last success run of rule to provided date and time \n" +
+			"run {rule_package} {rule_name}: runs the rule, you can also use regexp here => run .* .* (runs all rules) \n" +
+			"adsync [--only-computers] [--only-users]:: syncs db with active directory \n"
+		console.log(help);
+	}
 
 	static parseAction(action: any): Action {
 		if (action.type == "console") {
@@ -230,24 +295,31 @@ class Startup {
 			return null;
 		}
 	}
+
+	static async runAllRulesPriodically() {
+		let allRules = await Rule.list() 
+		while (true) {
+			console.log('::running all rules::')
+			for(let ruleName of Array.from(allRules.keys())) {
+				console.log(ruleName)
+				await allRules.get(ruleName).fire()
+			}
+		}
+	}
 }
 
 // Startup.main2();
 
+console.log(process.argv);
 
-
-
-
-console.log(process.argv)
-
-if(process.argv.length < 3) {
-    app.use('/api', ApiController);
-    app.listen(port, () => {
-        console.log(`Listening at http://localhost:${port}/`);
-});
+if (process.argv.length < 3) {
+	app.use("/api", ApiController);
+	app.listen(port, () => {
+		console.log(`Listening at http://localhost:${port}/`);
+	});
 } else {
-    if(process.argv[2] == '-help') {
-        Startup.printHelp()
-    }
-    Startup.main3(process.argv.slice(2))
+	if (process.argv[2] == "-help") {
+		Startup.printHelp();
+	}
+	Startup.main3(process.argv.slice(2));
 }

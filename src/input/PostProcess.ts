@@ -8,5 +8,5 @@ export interface PostProcess {
     action: Action
     rule: Rule
     
-    execute()
+    execute(): Promise<any>
 }

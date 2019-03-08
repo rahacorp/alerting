@@ -23,23 +23,31 @@ export class PostProcessIterate implements PostProcess {
         this.rule = rule
     }
 
-    async execute() {
-        if (this.context.evaluate(this.condition)) {
-            let objects = this.context.get(this.iterateObject)
-            for (let obj of objects) {
-                this.context.set(this.iterateObjectName, obj)
-                if (this.context.evaluate(this.iterateCondition)) {
-                    //this.action.act('iterate rule fired ' + this.iterateCondition + obj)
-                    let sourceID = new Date().toString()
-                    if(obj._id && obj._index) {
-                        sourceID = obj._index + '/' + obj._id
+    execute() {
+        return new Promise(async (resolve, reject) => {
+            if (this.context.evaluate(this.condition)) {
+                console.log('postprocess eval true')
+                let objects = this.context.get(this.iterateObject)
+                for (let obj of objects) {
+                    this.context.set(this.iterateObjectName, obj)
+                    if (this.context.evaluate(this.iterateCondition)) {
+                        //this.action.act('iterate rule fired ' + this.iterateCondition + obj)
+                        let sourceID = new Date().toString()
+                        if(obj._id && obj._index) {
+                            sourceID = obj._index + '/' + obj._id
+                        }
+                        console.log('postprocess action:', sourceID)
+                        let actionResp = await this.action.act(obj, sourceID, {}, this.rule)
+                        console.log('postprocess dn action', actionResp)
+                    } else {
+                        console.log('iterate condition is false : ' + this.iterateCondition)
                     }
-                    await this.action.act(obj, sourceID, {}, this.rule)
-                } else {
-                    //console.log('iterate condition is false : ' + this.iterateCondition)
                 }
+                this.context.set(this.iterateObjectName, {})
             }
-            this.context.set(this.iterateObjectName, {})
-        }
+            console.log('post process iterate done')
+            resolve()
+        })
+        
     }
 }

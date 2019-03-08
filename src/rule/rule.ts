@@ -163,7 +163,7 @@ export class Rule {
 	}
 
 	async fire() {
-		console.log("fire in the hole");
+		console.log("fire in the hole: " + this.name);
 		console.log("executing inputs");
 		for (let input of this.inputs) {
 			console.log(
@@ -185,7 +185,7 @@ export class Rule {
 				this.condition + "======================="
 			);
 			for (let action of this.actions) {
-				action.act(
+				await action.act(
 					this.name + " matched",
 					new Date().toString(),
 					{},
@@ -215,6 +215,18 @@ export class Rule {
 		return this.context;
 	}
 
+	static async list(pkg: string = '.*', name: string = '.*') {
+		let allRules = new Map<string, Rule>()
+		let session = ClientFactory.createClient("neo4j_session")
+		let rules = await session.run('MATCH (r:Rule) WHERE r.package =~ {pkg} AND r.name =~ {name} RETURN r.name as name, r.package as package, r.data as data', {name: name, pkg: pkg})
+		for(let record of rules.records) {
+			let rulePkg = record.get('package')
+			let ruleName = record.get('name')
+			let data = record.get('data')
+			allRules.set(rulePkg + '/' + ruleName, new Rule(JSON.parse(data)))
+		}
+		return allRules
+	}
 
 	static removeFromNeo4j(pkg: string, name: string, force: boolean) {
 		let q = 'MATCH (r:Rule) WHERE r.package =~ {pkg} AND r.name =~ {name} DELETE r'
@@ -222,8 +234,7 @@ export class Rule {
 			q = 'MATCH (r:Rule) WHERE r.package =~ {pkg} AND r.name =~ {name} DETACH DELETE r'
 		}
 		return new Promise((resolve, reject) => {
-            let neo4jDriver = ClientFactory.createClient("neo4j")
-			let session = neo4jDriver.session()
+			let session = ClientFactory.createClient("neo4j_session")
 			session
 				.run(
 					q,
@@ -234,41 +245,48 @@ export class Rule {
 				)
 				.then(function(result) {
                     console.log(result.summary.counters._stats);
-                    session.close()
 				})
 				.catch(function(error) {
+					console.error(error)
 					return reject(error);
 				});
 		});
 	}
+	
 	addToNeo4j(update: boolean, lastSuccessTime: string) {
 		return new Promise((resolve, reject) => {
-            let neo4jDriver = ClientFactory.createClient("neo4j")
-			let session = neo4jDriver.session()
-			let q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON CREATE SET rule.data = {data}"
-			if(update) {
-				q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON MATCH SET rule.data = {data}"
-				if(lastSuccessTime) {
-					q += ", rule.last_successful_check = {lastSuccess}"
+			try {
+				let session = ClientFactory.createClient("neo4j_session")
+
+				let q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON CREATE SET rule.data = {data}"
+				if(update) {
+					q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON MATCH SET rule.data = {data}"
+					if(lastSuccessTime) {
+						q += ", rule.last_successful_check = {lastSuccess}"
+					}
 				}
+				session
+					.run(
+						q,
+						{
+							ruleName: this.name,
+							rulePackage: this.pkg,
+							data: this.data,
+							lastSuccess: lastSuccessTime
+						}
+					)
+					.then(function(result) {
+						// console.log(result.summary.counters._stats);
+						return resolve(result.summary.counters._stats)
+					})
+					.catch(function(error) {
+						console.error(error)
+						return reject(error);
+					});
+			} catch (err) {
+				console.error(err)
+				reject(err)
 			}
-			session
-				.run(
-					q,
-					{
-                        ruleName: this.name,
-                        rulePackage: this.pkg,
-						data: this.data,
-						lastSuccess: lastSuccessTime
-                    }
-				)
-				.then(function(result) {
-                    console.log(result.summary.counters._stats);
-                    session.close()
-				})
-				.catch(function(error) {
-					return reject(error);
-				});
 		});
 	}
 }
