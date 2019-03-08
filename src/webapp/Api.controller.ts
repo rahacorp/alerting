@@ -12,7 +12,8 @@ function getAlertObjectsFromResults(result) {
         timestamp: undefined,
         sourceID: undefined,
         users: {},
-        computers: {},
+		computers: {},
+		data: undefined,
     }
 	console.log(result.records)
 	for (const alertRecord of result.records) {
@@ -26,6 +27,7 @@ function getAlertObjectsFromResults(result) {
 				sourceID: sourceID,
 				users: {},
 				computers: {},
+				data: "{}",
 			}
 		} else if (currentAlert.id != fields[0].toNumber()) { //changed id
 			alerts.push(currentAlert)
@@ -35,6 +37,7 @@ function getAlertObjectsFromResults(result) {
 				sourceID: sourceID,
 				users: {},
 				computers: {},
+				data: fields[8]
 			}
 		}
 
@@ -181,7 +184,7 @@ router.get('/getAlerts', (req: Request, res: Response) => {
 			.run('MATCH (um:ADUser)<-[r2:RELATED_TO]-(n:Alert) where um.objectSid = {sid} ' +
 				'OPTIONAL MATCH (n)-[r:RELATED_TO]->(c:ADComputer) ' +
 				'OPTIONAL MATCH (n)-[r3:RELATED_TO]->(u:ADUser)' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid ' +
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid, n.data ' +
 				'ORDER BY n.created_at desc', {
 					sid: req.query.user
 				})
@@ -198,7 +201,7 @@ router.get('/getAlerts', (req: Request, res: Response) => {
 			.run('MATCH (cm:ADComputer)<-[r2:RELATED_TO]-(n:Alert) where cm.objectSid = {sid} ' +
 				'OPTIONAL MATCH (n)-[r:RELATED_TO]->(u:ADUser) ' +
 				'OPTIONAL MATCH (n)-[r3:RELATED_TO]->(c:ADComputer)' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid ' +
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid, n.data ' +
 				'ORDER BY n.created_at desc', {
 					sid: req.query.computer
 				})
@@ -215,7 +218,7 @@ router.get('/getAlerts', (req: Request, res: Response) => {
 			.run('MATCH (n:Alert) ' +
 				'OPTIONAL MATCH (n)-[r:RELATED_TO]->(u:ADUser) ' +
 				'OPTIONAL MATCH (n)-[r3:RELATED_TO]->(c:ADComputer)' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid ' +
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid, n.data ' +
 				'ORDER BY n.created_at desc', {
 					sid: req.query.computer
 				})

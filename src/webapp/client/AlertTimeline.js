@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import * as moment from 'moment';
 import './app.css';
 import { VerticalTimeline, VerticalTimelineElement } from 'react-vertical-timeline-component';
+import ReactJson from 'react-json-view'
 
 import InfoIcon from '@material-ui/icons/Info';
 import SchoolIcon from '@material-ui/icons/School';
@@ -86,6 +87,20 @@ export default class AlertTimeline extends Component {
 					}
 					 user{users.length > 1 ? 's are' : ' is'} related to this alert
 				</p> 
+
+				<ReactJson 
+					src={JSON.parse(alert.data)} 
+					// theme="monokai"
+					collapsed={true}
+					onSelect={
+						(select)=>{
+							if(select.name === 'ProcessGuid' || select.name === 'ParentProcessGuid') {
+								console.log('selected', select)
+								props.openModal.bind(props.bind)(select.value)
+							}
+						}
+					}
+				/>
 			</VerticalTimelineElement>
 		)
 	}
