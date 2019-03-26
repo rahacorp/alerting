@@ -179,7 +179,7 @@ router.get('/process', (req: Request, res: Response) => {
 });
 
 
-router.get('/getAlerts', guard.check('admin'), (req: Request, res: Response) => {
+router.get('/getAlerts'/*, guard.check('admin')*/, (req: Request, res: Response) => {
 	console.log(req.query);
 	if (req.query.user) {
 		const session = ClientFactory.createClient("neo4j_session")
@@ -411,7 +411,7 @@ router.get('/users', (req: Request, res: Response) => {
 		});
 });
 
-router.get('/logs', guard.check('admin'), async function (req: Request, res: Response) {
+router.get('/logs'/*, guard.check('admin')*/, async function (req: Request, res: Response) {
     let elasticClient = ClientFactory.createClient('elastic')
 	const response = await elasticClient.search({
 		index: 'winlogbeat-*',
