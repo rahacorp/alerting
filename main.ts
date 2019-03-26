@@ -6,13 +6,20 @@ import { Action } from "./src/action/action";
 import { ADSynchronizer } from "./src/webapp/ADSynchronizer";
 import * as util from "util";
 import express from "express";
+import bodyParser from "body-parser";
+import jwt from "express-jwt";
 
-import { ApiController } from "./src/webapp/Controllers";
+import { ApiController, AuthController } from "./src/webapp/Controllers";
 
 const app: express.Application = express();
 const port: number = parseInt(process.env.PORT) || 8080;
 app.use(express.static("dist"));
 app.use(express.static("public"));
+app.use(function(err, req, res, next) {
+	if (err.code === "permission_denied") {
+		res.status(403).send("Forbidden");
+	}
+});
 
 class Startup {
 	public static async main3(args) {
@@ -66,8 +73,8 @@ class Startup {
 		} else if (args[0] === "run") {
 			let pkg = args[1];
 			let ruleName = args[2];
-			let allRules = await Rule.list(pkg, ruleName) 
-			let promises = []
+			let allRules = await Rule.list(pkg, ruleName);
+			let promises = [];
 
 			/*
 			allRules.forEach(rule => {
@@ -86,19 +93,19 @@ class Startup {
 					process.exit();
 				});
 			*/
-			for(let ruleName of Array.from(allRules.keys())) {
-				console.log(ruleName)
-				await allRules.get(ruleName).fire()
-				console.log('fire await done')
+			for (let ruleName of Array.from(allRules.keys())) {
+				console.log(ruleName);
+				await allRules.get(ruleName).fire();
+				// console.log('fire await done')
 			}
 			process.exit();
 		} else if (args[0] === "list") {
-			let allRules = await Rule.list(args[1], args[2]) 
-			for(let ruleName of Array.from(allRules.keys())) {
-				console.log(ruleName)
+			let allRules = await Rule.list(args[1], args[2]);
+			for (let ruleName of Array.from(allRules.keys())) {
+				console.log(ruleName);
 			}
 			process.exit();
-		} 
+		}
 		// console.log('happy sarbazi')
 	}
 
@@ -108,10 +115,10 @@ class Startup {
 				console.log("add to db ", path, update, lastTime);
 				let rule = Rule.fromFile(path);
 				try {
-					let res = await rule.addToNeo4j(update, lastTime) 
+					let res = await rule.addToNeo4j(update, lastTime);
 					resolve(res);
 				} catch (err) {
-					console.error(err)
+					console.error(err);
 					reject(err);
 				}
 			} else {
@@ -285,7 +292,7 @@ class Startup {
 			"remove {rule_package} {rule_name} [-force]: removes rules from db (you can use regexp like: remove rule .* .*), -force deletes rule with its alerts \n" +
 			"set_last_run {rule_package} {rule_name} {last_run_time}: sets last success run of rule to provided date and time \n" +
 			"run {rule_package} {rule_name}: runs the rule, you can also use regexp here => run .* .* (runs all rules) \n" +
-			"adsync [--only-computers] [--only-users]:: syncs db with active directory \n"
+			"adsync [--only-computers] [--only-users]:: syncs db with active directory \n";
 		console.log(help);
 	}
 
@@ -301,21 +308,21 @@ class Startup {
 	static sleep(ms: number) {
 		return new Promise((resolve, reject) => {
 			setTimeout(() => {
-				resolve()
+				resolve();
 			}, ms);
-		})
+		});
 	}
 
 	static async runAllRulesPriodically() {
-		let allRules = await Rule.list() 
+		let allRules = await Rule.list();
 		while (true) {
-			console.log('::running all rules::')
-			for(let ruleName of Array.from(allRules.keys())) {
-				console.log(ruleName)
-				await allRules.get(ruleName).fire()
+			console.log("::running all rules::");
+			for (let ruleName of Array.from(allRules.keys())) {
+				console.log(ruleName);
+				await allRules.get(ruleName).fire();
 			}
-			console.log('::end running all rules::')
-			await Startup.sleep(30 * 1000)
+			console.log("::end running all rules::");
+			await Startup.sleep(30 * 1000);
 		}
 	}
 }
@@ -325,10 +332,18 @@ class Startup {
 console.log(process.argv);
 
 if (process.argv.length < 3) {
-	app.use("/api", ApiController);
+	app.use(
+		bodyParser.urlencoded({
+			// Middleware
+			extended: true
+		})
+	);
+	// app.use(.unless({ path: ["/auth"] }));
+	// app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
+	app.use("/auth", AuthController);
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
-		Startup.runAllRulesPriodically()
+		Startup.runAllRulesPriodically();
 	});
 } else {
 	if (process.argv[2] == "-help") {

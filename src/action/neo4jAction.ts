@@ -21,7 +21,7 @@ export class Neo4jAction implements Action {
 		return new Promise(async (resolve, reject) => {
             // let neo4jSession = action.neo4jClient.session();
 			try {
-                console.log("[" + action.name + "]", obj);
+                console.log("[" + action.name + "]", obj, rule.name + ":" + sourceID);
                 let neo4jSession = ClientFactory.createClient("neo4j_session");
 				let result = await neo4jSession.run(
 					"MATCH (rule:Rule {name : {ruleName}, package: {rulePackage} }) " +
@@ -35,7 +35,7 @@ export class Neo4jAction implements Action {
 						data: JSON.stringify(obj)
 					}
 				);
-				console.log(result.summary.counters._stats);
+				console.log('alert created : ', result.summary.counters._stats);
 				if (result.summary.counters._stats.relationshipsCreated == 1) {
 					let relEvaluated = action.context.formatObject(
 						action.relations
@@ -43,9 +43,15 @@ export class Neo4jAction implements Action {
 					for (let type in relEvaluated) {
 						for (let relation of relEvaluated[type]) {
 							//MATCH (n:`type` {`relation.field`: {val}}) MERGE (rule)-[r:RELATED_TO]->(n), {val: relation.value}
-							let query = `MATCH (n:${type} {${
+							let query2 = `MATCH (n:${type} {${
 								relation.field
 							}: {val}}) MERGE (alert:Alert {sourceID : {sourceID} }) MERGE (alert)-[r:RELATED_TO]->(n)`;
+
+							let query = `MATCH (n:${type}) where LOWER(n.${relation.field}) = LOWER({val}) MERGE (alert:Alert {sourceID : {sourceID} }) MERGE (alert)-[r:RELATED_TO]->(n)`;
+							console.log(query, {
+								val: relation.value,
+								sourceID: rule.name + ":" + sourceID
+							})
 							// let rules = await session.run(q)
 							try {
 								let result = await neo4jSession.run(query, {

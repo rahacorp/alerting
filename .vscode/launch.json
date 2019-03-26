@@ -10,7 +10,7 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/main.ts",
             // "args": ["list"],
-            "args": ["run"],
+            "args": [],
             // "args": ["add", "C:\\Users\\alireza\\Desktop\\Programming\\personal\\rules\\jsonRule"],
             "outFiles": [
                 "${workspaceFolder}/**/*.js"

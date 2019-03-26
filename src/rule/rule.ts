@@ -154,7 +154,11 @@ export class Rule {
 				trigger.start();
 			}
 		} else {
-			this.fire();
+			try {
+				this.fire();
+			} catch (err) {
+				console.error(err)
+			}
 		}
 	}
 
@@ -171,7 +175,12 @@ export class Rule {
 				"======================================================="
 			);
 			console.log("executing input", input.name);
-			await input.execute();
+			try {
+				await input.execute();
+			} catch (err) {
+				console.error('error in executing input', err)
+				return
+			}
 			console.log(
 				"input executed    ====================================="
 			);
@@ -200,18 +209,18 @@ export class Rule {
 		}
 		// console.log('context: ')
         // this.context.print()
-        this.setLastSuccessTime(lastTimeDateStr)
+        await this.setLastSuccessTime(lastTimeDateStr)
 		console.log("fire done", this.name);
     }
     
-    private setLastSuccessTime(dateStr?: string) {
+    private async setLastSuccessTime(dateStr?: string) {
 		if(!dateStr) {
 			dateStr = new Date().toISOString()
 		}
         this.context.set('last_successful_check', dateStr)
         let session = ClientFactory.createClient("neo4j_session")
-        session.run('MATCH (n:Rule {name: {ruleName} , package: {pkgName}}) SET n.last_successful_check = {last_successful_check}', {ruleName: this.name, pkgName: this.pkg, last_successful_check: dateStr})
-
+        await session.run('MATCH (n:Rule {name: {ruleName} , package: {pkgName}}) SET n.last_successful_check = {last_successful_check}', {ruleName: this.name, pkgName: this.pkg, last_successful_check: dateStr})
+		console.log('set last success: ', dateStr)
     }
 
 	getContext(): Context {

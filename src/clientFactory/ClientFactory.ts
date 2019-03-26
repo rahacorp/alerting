@@ -4,7 +4,6 @@ import {v1 as neo4j} from 'neo4j-driver'
 import config from '../../config.json'
 
 export class ClientFactory {
-
     static clients: any
 
     public static createClient(type: string) {

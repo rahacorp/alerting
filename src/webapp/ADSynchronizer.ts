@@ -77,7 +77,12 @@ export class ADSynchronizer {
 				console.log(computers)
 				for (let computer of computers.other) {
 					console.log(computer);
-					
+					if(computer.cn) {
+						computer.cn = computer.cn.toLowerCase()
+					}
+					if(computer.dNSHostName) {
+						computer.dNSHostName = computer.dNSHostName.toLowerCase()
+					}
 					synchronizer.neo4jSession
 						.run(
 							"MERGE (computer:ADComputer {dn : {dn} }) ON CREATE SET computer.cn = {cn}, computer.objectSid = {objectSid}, computer.dNSHostName = {dNSHostName}, " + 
@@ -110,10 +115,13 @@ export class ADSynchronizer {
 					console.log(user);
 					if (user.userPrincipalName) {
 						let domainName =  user.userPrincipalName.split('@')[1].split('.')[0]
-						user.logonName = domainName.toUpperCase() + '\\' + user.sAMAccountName
+						user.logonName = (domainName.toUpperCase() + '\\' + user.sAMAccountName).toLowerCase()
 					} else {
 						let domainName = user.dn.split(',DC=')[1]
-						user.logonName = domainName.toUpperCase() + '\\' + user.sAMAccountName
+						user.logonName = (domainName.toUpperCase() + '\\' + user.sAMAccountName).toLowerCase()
+					}
+					if(user.cn) {
+						user.cn = user.cn.toLowerCase()
 					}
 					
 					synchronizer.neo4jSession

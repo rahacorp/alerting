@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { ClientFactory } from "../clientFactory/ClientFactory";
 
+import expressPerm from "express-jwt-permissions";
+const guard = expressPerm();
 
 // Assign router to the express.Router() instance
 const router: Router = Router();
@@ -176,7 +178,7 @@ router.get('/process', (req: Request, res: Response) => {
 });
 
 
-router.get('/getAlerts', (req: Request, res: Response) => {
+router.get('/getAlerts', guard.check('admin'), (req: Request, res: Response) => {
 	console.log(req.query);
 	if (req.query.user) {
 		const session = ClientFactory.createClient("neo4j_session")
@@ -305,7 +307,7 @@ router.get('/users', (req: Request, res: Response) => {
 		});
 });
 
-router.get('/logs', async function (req: Request, res: Response) {
+router.get('/logs', guard.check('admin'), async function (req: Request, res: Response) {
     let elasticClient = ClientFactory.createClient('elastic')
 	const response = await elasticClient.search({
 		index: 'winlogbeat-*',

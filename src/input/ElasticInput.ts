@@ -54,8 +54,8 @@ export class ElasticInput implements Input {
         return new Promise(async (resolve, reject) => {
             for (let postProcess of this.postProcesses) {
                 await postProcess.execute()
-                resolve()
             }
+            resolve()
         })
     }
 

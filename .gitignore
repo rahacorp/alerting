@@ -40,3 +40,4 @@ test/*.js
 *.map
 bin
 config.json
+config-local.json
