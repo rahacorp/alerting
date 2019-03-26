@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ClientFactory } from "../clientFactory/ClientFactory";
+import {v1 as neo4j} from 'neo4j-driver'
 
 import expressPerm from "express-jwt-permissions";
 const guard = expressPerm();
@@ -186,7 +187,7 @@ router.get('/getAlerts', guard.check('admin'), (req: Request, res: Response) => 
 			.run('MATCH (um:ADUser)<-[r2:RELATED_TO]-(n:Alert) where um.objectSid = {sid} ' +
 				'OPTIONAL MATCH (n)-[r:RELATED_TO]->(c:ADComputer) ' +
 				'OPTIONAL MATCH (n)-[r3:RELATED_TO]->(u:ADUser)' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid, n.data ' +
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid, n.data' +
 				'ORDER BY n.created_at desc', {
 					sid: req.query.user
 				})
@@ -234,6 +235,109 @@ router.get('/getAlerts', guard.check('admin'), (req: Request, res: Response) => 
 	}
 	// res.send('done2');
 });
+
+router.post('/alert/:alertId/assign', async (req: Request, res: Response) => {
+	if(!req.body.username) {
+		return res.status(400).json({
+			success: false,
+			message: 'please provide "username" parameter'
+		})
+	}
+	try {
+		let session = ClientFactory.createClient("neo4j_session");
+		let assign = await session.run(
+			"MATCH (u:User {username : {username}}) MATCH (a:Alert) WHERE ID(a) = {alertId} MERGE (a)-[r:ASSIGNED_TO]->(u)",
+			{ username: req.body.username, alertId: neo4j.int(req.params.alertId) }
+		);
+		if (assign.summary.counters._stats.relationshipsCreated == 1) {
+			res.json({
+				success: true,
+				message: 'assign relation created successfully'
+			})
+		} else {
+			res.json({
+				success: false,
+				message: 'assign relation not created'
+			})
+		}
+	} catch (err) {
+		res.status(400).json({
+			success: false,
+			message: err.message
+		});
+	}
+	
+})
+
+router.post('/alert/:alertId/unassign', async (req: Request, res: Response) => {
+	if(!req.body.username) {
+		return res.status(400).json({
+			success: false,
+			message: 'please provide "username" parameter'
+		})
+	}
+	try {
+		let session = ClientFactory.createClient("neo4j_session");
+		let assign = await session.run(
+			"MATCH (u:User {username : {username}}) MATCH (a:Alert) WHERE ID(a) = {alertId} MATCH (a)-[r:ASSIGNED_TO]->(u) DELETE r",
+			{ username: req.body.username, alertId: neo4j.int(req.params.alertId) }
+		);
+		// console.log(assign.summary.counters._stats)
+		if (assign.summary.counters._stats.relationshipsDeleted == 1) {
+			res.json({
+				success: true,
+				message: 'assign relation deleted successfully'
+			})
+		} else {
+			res.json({
+				success: false,
+				message: 'assign relation not deleted'
+			})
+		}
+	} catch (err) {
+		res.status(400).json({
+			message: err.message
+		});
+	}
+})
+
+router.post('/alert/:alertId/setState', async (req: Request, res: Response) => {
+	if(!req.body.state) {
+		return res.status(400).json({
+			success: false,
+			message: 'please provide "state" parameter'
+		})
+	} else if (["initialized", "assigned", "checking", "not_important", "responded"].indexOf(req.body.state) == -1) {
+		return res.status(400).json({
+			success: false,
+			message: 'state is one of : ["initialized", "assigned", "checking", "not_important", "responded"]'
+		})
+	}
+	try {
+		let session = ClientFactory.createClient("neo4j_session");
+		let assign = await session.run(
+			"MATCH (a:Alert) WHERE ID(a) = {alertId} SET a.state = {state}",
+			{ state: req.body.state, alertId: neo4j.int(req.params.alertId)  }
+		);
+		if (assign.summary.counters._stats.propertiesSet == 1) {
+			res.json({
+				success: true,
+				message: 'state changed successfully'
+			})
+		} else {
+			res.json({
+				success: false,
+				message: 'assign did not change'
+			})
+		}
+	} catch (err) {
+		res.status(400).json({
+			success: false,
+			message: err.message
+		});
+	}
+	
+})
 
 router.get('/user', (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")

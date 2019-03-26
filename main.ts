@@ -15,12 +15,13 @@ const app: express.Application = express();
 const port: number = parseInt(process.env.PORT) || 8080;
 app.use(express.static("dist"));
 app.use(express.static("public"));
+/*
 app.use(function(err, req, res, next) {
 	if (err.code === "permission_denied") {
 		res.status(403).send("Forbidden");
 	}
 });
-
+*/
 class Startup {
 	public static async main3(args) {
 		if (args[0] === "add" || args[0] === "update") {
@@ -340,10 +341,11 @@ if (process.argv.length < 3) {
 	);
 	// app.use(.unless({ path: ["/auth"] }));
 	// app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
+	app.use("/api", ApiController);
 	app.use("/auth", AuthController);
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
-		Startup.runAllRulesPriodically();
+		// Startup.runAllRulesPriodically();
 	});
 } else {
 	if (process.argv[2] == "-help") {
