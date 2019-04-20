@@ -8,7 +8,9 @@ const guard = expressPerm();
 // Assign router to the express.Router() instance
 const router: Router = Router();
 
-function getAlertObjectsFromResults(result) {
+async function getAlertObjectsFromResults(result) {
+	// return result
+	let session = ClientFactory.createClient("neo4j_session");
 	let alerts = []
 	let currentAlert = {
         id: undefined,
@@ -18,33 +20,41 @@ function getAlertObjectsFromResults(result) {
 		computers: {},
 		data: undefined,
     }
-	console.log(result.records)
+	// console.log(result.records)
 	for (const alertRecord of result.records) {
 		let fields = alertRecord._fields
 		let timestamp = new Date(fields[2].toString())
 		let sourceID = fields[3]
-		if (!currentAlert.id) {
-			currentAlert = {
-				id: fields[0].toNumber(),
-				timestamp: timestamp,
-				sourceID: sourceID,
-				users: {},
-				computers: {},
-				data: "{}",
-			}
-		} else if (currentAlert.id != fields[0].toNumber()) { //changed id
-			alerts.push(currentAlert)
-			currentAlert = {
-				id: fields[0].toNumber(),
-				timestamp: timestamp,
-				sourceID: sourceID,
-				users: {},
-				computers: {},
-				data: fields[8]
+		let data = fields[4]
+		currentAlert = {
+			id: fields[0].toNumber(),
+			timestamp: timestamp,
+			sourceID: sourceID,
+			users: {},
+			computers: {},
+			data: data,
+		}
+		let relations = await session.run(
+			"Match (n)<-[r:RELATED_TO]-(a:Alert) where (n:ADUser OR n:ADComputer) AND ID(a) = {alertId} RETURN n, LABELS(n)",
+			{ alertId: fields[0] }
+		)
+		for(let related of relations.records) {
+			//dnshostname logonname
+			if(related._fields[1].includes('ADComputer')) {
+				currentAlert.computers[related._fields[0].properties.objectSid] = {
+					objectSid: related._fields[0].properties.objectSid,
+					label: related._fields[0].properties.dNSHostName
+				}
+			} else if(related._fields[1].includes('ADUser')) {
+				currentAlert.users[related._fields[0].properties.objectSid] = {
+					objectSid: related._fields[0].properties.objectSid,
+					label: related._fields[0].properties.logonName
+				}
 			}
 		}
+		// console.log(fields[0].toNumber(), relations.records)
 
-		let user = {
+		/*let user = {
 			objectSid: fields[7],
 			label: fields[6]
 		}
@@ -55,8 +65,7 @@ function getAlertObjectsFromResults(result) {
 		}
 		currentAlert.computers[computer.objectSid] = computer
 		console.log(sourceID, timestamp, user, computer);
-	}
-	if (currentAlert.id) {
+		*/
 		alerts.push(currentAlert)
 	}
 	return alerts
@@ -181,18 +190,37 @@ router.get('/process', (req: Request, res: Response) => {
 
 router.get('/getAlerts'/*, guard.check('admin')*/, (req: Request, res: Response) => {
 	console.log(req.query);
+	let limit = 50
+	let skip = 0
+	if(req.query.limit) {
+		if(Number(req.query.limit)) {
+			limit = Number(req.query.limit)
+			if(limit > 100 || limit < 0) {
+				limit = 50
+			}
+		}
+	}
+
+	if(req.query.skip) {
+		if(Number(req.query.skip)) {
+			skip = Number(req.query.skip)
+			if(skip < 0) {
+				skip = 0
+			}
+		}
+	}
 	if (req.query.user) {
 		const session = ClientFactory.createClient("neo4j_session")
 		session
 			.run('MATCH (um:ADUser)<-[r2:RELATED_TO]-(n:Alert) where um.objectSid = {sid} ' +
-				'OPTIONAL MATCH (n)-[r:RELATED_TO]->(c:ADComputer) ' +
-				'OPTIONAL MATCH (n)-[r3:RELATED_TO]->(u:ADUser)' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid, n.data' +
-				'ORDER BY n.created_at desc', {
-					sid: req.query.user
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state ' +
+				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
+					sid: req.query.user,
+					skip: skip,
+					limit: limit
 				})
-			.then((result) => {
-				let alerts = getAlertObjectsFromResults(result)
+			.then(async (result) => {
+				let alerts = await getAlertObjectsFromResults(result)
 				res.send(alerts);
 			})
 			.catch((error) => {
@@ -202,14 +230,14 @@ router.get('/getAlerts'/*, guard.check('admin')*/, (req: Request, res: Response)
 		const session = ClientFactory.createClient("neo4j_session");
 		session
 			.run('MATCH (cm:ADComputer)<-[r2:RELATED_TO]-(n:Alert) where cm.objectSid = {sid} ' +
-				'OPTIONAL MATCH (n)-[r:RELATED_TO]->(u:ADUser) ' +
-				'OPTIONAL MATCH (n)-[r3:RELATED_TO]->(c:ADComputer)' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid, n.data ' +
-				'ORDER BY n.created_at desc', {
-					sid: req.query.computer
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state ' +
+				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
+					sid: req.query.computer,
+					skip: skip,
+					limit: limit
 				})
-			.then((result) => {
-				let alerts = getAlertObjectsFromResults(result)
+			.then(async (result) => {
+				let alerts = await getAlertObjectsFromResults(result)
 				res.send(alerts);
 			})
 			.catch((error) => {
@@ -219,14 +247,14 @@ router.get('/getAlerts'/*, guard.check('admin')*/, (req: Request, res: Response)
 		const session = ClientFactory.createClient("neo4j_session");
 		session
 			.run('MATCH (n:Alert) ' +
-				'OPTIONAL MATCH (n)-[r:RELATED_TO]->(u:ADUser) ' +
-				'OPTIONAL MATCH (n)-[r3:RELATED_TO]->(c:ADComputer)' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, c.dNSHostName, c.objectSid, u.logonName, u.objectSid, n.data ' +
-				'ORDER BY n.created_at desc', {
-					sid: req.query.computer
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state ' +
+				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
+					sid: req.query.computer,
+					skip: skip,
+					limit: limit
 				})
-			.then((result) => {
-				let alerts = getAlertObjectsFromResults(result)
+			.then(async (result) => {
+				let alerts = await getAlertObjectsFromResults(result)
 				res.send(alerts);
 			})
 			.catch((error) => {
