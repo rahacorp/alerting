@@ -16,15 +16,27 @@ function getHashedPassword(pass: string) {
 router.post("/register", (req: Request, res: Response) => {
 	console.log(req.body);
 	if (!req.body.username) {
-		return res.send('please provide "username"');
+		return res.status(400).json({
+			success: false,
+			message: 'please provide "username"'
+		});
 	}
 	if (!req.body.password) {
-		return res.send('please provide "password"');
+		return res.status(400).json({
+			success: false,
+			message: 'please provide "password"'
+		});
 	}
 	if (!req.body.role) {
-		return res.send('please provide "role"');
+		return res.status(400).json({
+			success: false,
+			message: 'please provide "role"'
+		});
 	} else if (["admin", "viewer", "responder"].indexOf(req.body.role) == -1) {
-		return res.send("role is one of : [admin, viewer, responder]");
+		return res.status(400).json({
+			success: false,
+			message: "role is one of : [admin, viewer, responder]"
+		});
 	}
 	let session = ClientFactory.createClient("neo4j_session");
 	let q =
@@ -38,14 +50,28 @@ router.post("/register", (req: Request, res: Response) => {
 		.then(result => {
 			console.log(result.summary);
 			if (result.summary.counters._stats.nodesCreated == 1) {
-				res.send("account created successfully");
+				return res.json({
+					success: true,
+					message: "account created successfully",
+					user: {
+						username: req.body.username,
+						password: getHashedPassword(req.body.password),
+						role: req.body.role
+					}
+				});
 			} else {
-				res.send("account already exists");
+				return res.status(400).json({
+					success: false,
+					message: "account already exists"
+				});
 			}
 		})
 		.catch(error => {
 			console.log(error);
-			res.status(500).send(error);
+			res.status(500).json({
+				success: false,
+				message: error.message
+			});
 		});
 });
 

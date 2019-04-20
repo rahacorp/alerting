@@ -345,7 +345,7 @@ if (process.argv.length < 3) {
 	app.use("/auth", AuthController);
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
-		Startup.runAllRulesPriodically();
+		// Startup.runAllRulesPriodically();
 	});
 } else {
 	if (process.argv[2] == "-help") {

@@ -411,6 +411,25 @@ router.get('/users', (req: Request, res: Response) => {
 		});
 });
 
+router.get('/users2', (req: Request, res: Response) => {
+	const session = ClientFactory.createClient("neo4j_session")
+	session
+		.run('MATCH (n:User) RETURN n')
+		.then((result) => {
+			let users = []
+			for (let user of result.records) {
+				users.push({
+					username: user._fields[0].properties.username,
+					role: user._fields[0].properties.role					
+				})
+			}
+			res.send(users);
+		})
+		.catch((error) => {
+			console.log(error);
+		});
+});
+
 router.get('/logs'/*, guard.check('admin')*/, async function (req: Request, res: Response) {
     let elasticClient = ClientFactory.createClient('elastic')
 	const response = await elasticClient.search({
