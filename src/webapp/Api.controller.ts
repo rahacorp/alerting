@@ -459,10 +459,30 @@ router.get('/users2', (req: Request, res: Response) => {
 });
 
 router.get('/logs'/*, guard.check('admin')*/, async function (req: Request, res: Response) {
-    let elasticClient = ClientFactory.createClient('elastic')
+	let elasticClient = ClientFactory.createClient('elastic')
+	let limit = 50
+	let skip = 0
+	if(req.query.limit) {
+		if(Number(req.query.limit)) {
+			limit = Number(req.query.limit)
+			if(limit > 500 || limit < 0) {
+				limit = 500
+			}
+		}
+	}
+
+	if(req.query.skip) {
+		if(Number(req.query.skip)) {
+			skip = Number(req.query.skip)
+			if(skip < 0) {
+				skip = 0
+			}
+		}
+	}
 	const response = await elasticClient.search({
 		index: 'winlogbeat-*',
-		size: 500,
+		size: limit,
+		from: skip,
 		body: {
 			query: {
 				query_string: {
@@ -472,7 +492,10 @@ router.get('/logs'/*, guard.check('admin')*/, async function (req: Request, res:
 		}
 	})
 	// console.log(response.hits.hits)
-	res.send(response.hits.hits)
+	res.json({
+		total: response.hits.total,
+		hits: response.hits.hits
+	})
 })
 
 router.get('/logCount', async function (req: Request, res: Response) {
@@ -517,5 +540,29 @@ router.get('/suggest', async function (req: Request, res: Response) {
 	res.send(response.aggregations.tagg.buckets)
 })
 
+router.get('/searchObjects', async (req: Request, res: Response) => {
+	if(!req.query.q) {
+		return res.status(400).json({
+			success: false,
+			message: 'please provide "q" parameter'
+		})
+	}
+	let query = '(?i).*' + req.query.q + '.*'
+	const session = ClientFactory.createClient("neo4j_session")
+	let result = await session.run(
+		'Match (n) where (n:ADUser OR n:ADComputer) ' + 
+		'AND (any(prop in keys(n) where n[prop] =~ {query})) return n LIMIT 10', {
+			query: query
+		})
+	let response = []
+	for(let obj of result.records) {
+		response.push({
+			type: obj._fields[0].labels[0],
+			label: obj._fields[0].properties.logonName || obj._fields[0].properties.dNSHostName,
+			objectSid: obj._fields[0].properties.objectSid 
+		})
+	}
+	res.json(response)
+})
 // Export the express.Router() instance to be used by server.ts
 export const ApiController: Router = router;
