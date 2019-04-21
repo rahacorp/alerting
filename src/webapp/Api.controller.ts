@@ -18,7 +18,9 @@ async function getAlertObjectsFromResults(result) {
         sourceID: undefined,
         users: {},
 		computers: {},
+		assignedTo: {},
 		data: undefined,
+		state: undefined,
     }
 	// console.log(result.records)
 	for (const alertRecord of result.records) {
@@ -26,16 +28,19 @@ async function getAlertObjectsFromResults(result) {
 		let timestamp = new Date(fields[2].toString())
 		let sourceID = fields[3]
 		let data = fields[4]
+		let state = fields[5]
 		currentAlert = {
 			id: fields[0].toNumber(),
 			timestamp: timestamp,
 			sourceID: sourceID,
 			users: {},
 			computers: {},
+			assignedTo: {},
 			data: data,
+			state: state
 		}
 		let relations = await session.run(
-			"Match (n)<-[r:RELATED_TO]-(a:Alert) where (n:ADUser OR n:ADComputer) AND ID(a) = {alertId} RETURN n, LABELS(n)",
+			"Match (n)<-[r]-(a:Alert) where (n:ADUser OR n:ADComputer OR n:User) AND ID(a) = {alertId} RETURN n, LABELS(n)",
 			{ alertId: fields[0] }
 		)
 		for(let related of relations.records) {
@@ -49,6 +54,11 @@ async function getAlertObjectsFromResults(result) {
 				currentAlert.users[related._fields[0].properties.objectSid] = {
 					objectSid: related._fields[0].properties.objectSid,
 					label: related._fields[0].properties.logonName
+				}
+			}  else if(related._fields[1].includes('User')) {
+				currentAlert.assignedTo[related._fields[0].properties.username] = {
+					role: related._fields[0].properties.role,
+					label: related._fields[0].properties.username
 				}
 			}
 		}
@@ -188,6 +198,29 @@ router.get('/process', (req: Request, res: Response) => {
 });
 
 
+router.get('/alert/:alertId'/*, guard.check('admin')*/, (req: Request, res: Response) => {
+	const session = ClientFactory.createClient("neo4j_session");
+		session
+			.run('MATCH (n:Alert) WHERE ID(n) = {alertId} ' +
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state ', {
+					alertId: neo4j.int(req.params.alertId) 
+				})
+			.then(async (result) => {
+				let alerts = await getAlertObjectsFromResults(result)
+				if(alerts.length == 0) {
+					res.status(404)
+				}
+				res.send(alerts[0]);
+			})
+			.catch((error) => {
+				res.status(500).json({
+					success: false,
+					message: error.message
+				})
+				console.log(error);
+			});
+})
+
 router.get('/getAlerts'/*, guard.check('admin')*/, (req: Request, res: Response) => {
 	console.log(req.query);
 	let limit = 50
@@ -249,7 +282,6 @@ router.get('/getAlerts'/*, guard.check('admin')*/, (req: Request, res: Response)
 			.run('MATCH (n:Alert) ' +
 				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state ' +
 				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
-					sid: req.query.computer,
 					skip: skip,
 					limit: limit
 				})

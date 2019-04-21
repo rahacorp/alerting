@@ -103,7 +103,8 @@ router.post("/login", async (req: Request, res: Response) => {
 				res.json({
 					success: true,
 					message: "Authentication successful!",
-					token: token
+					token: token,
+					roles: payload.permissions
 				});
 			} else {
 				res.status(403).json({
