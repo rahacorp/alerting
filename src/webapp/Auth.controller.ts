@@ -126,5 +126,42 @@ router.post("/login", async (req: Request, res: Response) => {
 	}
 });
 
+router.post("/resetPassword", async (req: Request, res: Response) => {
+	let username = req.body.username;
+	let password = req.body.password;
+
+	if (username && password) {
+		try {
+			let session = ClientFactory.createClient("neo4j_session");
+			let users = await session.run(
+				"MATCH (u:User) WHERE u.username = {username} SET u.password = {password}",
+				{ username: username, password: getHashedPassword(password) }
+			);
+			console.log(users.couint);
+			if (users.records.length == 1) {
+				res.json({
+					success: true,
+					message: "password reset success",
+				});
+			} else {
+				res.status(404).json({
+					success: false,
+					message: "user not found"
+				});
+			}
+		} catch (err) {
+			res.status(400).json({
+				success: false,
+				message: err.message
+			});
+		}
+	} else {
+		res.status(400).json({
+			success: false,
+			message: "Authentication failed! Please check the request"
+		});
+	}
+})
+
 // Export the express.Router() instance to be used by server.ts
 export const AuthController: Router = router;
