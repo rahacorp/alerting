@@ -315,7 +315,7 @@ router.post('/alert/:alertId/assign', async (req: Request, res: Response) => {
 				message: 'assign relation created successfully'
 			})
 		} else {
-			res.json({
+			res.status(400).json({
 				success: false,
 				message: 'assign relation not created'
 			})
@@ -349,7 +349,7 @@ router.post('/alert/:alertId/unassign', async (req: Request, res: Response) => {
 				message: 'assign relation deleted successfully'
 			})
 		} else {
-			res.json({
+			res.status(400).json({
 				success: false,
 				message: 'assign relation not deleted'
 			})
@@ -385,7 +385,7 @@ router.post('/alert/:alertId/setState', async (req: Request, res: Response) => {
 				message: 'state changed successfully'
 			})
 		} else {
-			res.json({
+			res.status(400).json({
 				success: false,
 				message: 'assign did not change'
 			})
