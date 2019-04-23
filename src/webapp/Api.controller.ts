@@ -527,6 +527,11 @@ router.get('/logs', /*guard.check('log:read'),*/ async function (req: Request, r
 			}
 		}
 	}
+	if(skip + limit > 10000) {
+		return res.status(400).json({
+			message: 'skip + limit must be less than 10000 (elasticsearch limits)'
+		})
+	}
 	const response = await elasticClient.search({
 		index: 'winlogbeat-*',
 		size: limit,
