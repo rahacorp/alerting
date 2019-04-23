@@ -258,6 +258,23 @@ router.get('/getAlerts', /*guard.check('alert:read'),*/ (req: Request, res: Resp
 			.catch((error) => {
 				console.log(error);
 			});
+	} if (req.query.user2) {
+		const session = ClientFactory.createClient("neo4j_session")
+		session
+			.run('MATCH (um:User)<-[r2:ASSIGNED_TO]-(n:Alert) where um.username = {username} ' +
+				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state ' +
+				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
+					username: req.query.user2,
+					skip: skip,
+					limit: limit
+				})
+			.then(async (result) => {
+				let alerts = await getAlertObjectsFromResults(result)
+				res.send(alerts);
+			})
+			.catch((error) => {
+				console.log(error);
+			});
 	} else if (req.query.computer) {
 		const session = ClientFactory.createClient("neo4j_session");
 		session
