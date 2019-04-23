@@ -137,17 +137,16 @@ router.post("/resetPassword", async (req: Request, res: Response) => {
 				"MATCH (u:User) WHERE u.username = {username} SET u.password = {password}",
 				{ username: username, password: getHashedPassword(password) }
 			);
-			console.log(users.couint);
-			if (users.records.length == 1) {
+			if (users.summary.counters._stats.propertiesSet == 1) {
 				res.json({
 					success: true,
 					message: "password reset success",
-				});
+				})
 			} else {
 				res.status(404).json({
 					success: false,
-					message: "user not found"
-				});
+					message: 'user not  found'
+				})
 			}
 		} catch (err) {
 			res.status(400).json({
@@ -158,7 +157,7 @@ router.post("/resetPassword", async (req: Request, res: Response) => {
 	} else {
 		res.status(400).json({
 			success: false,
-			message: "Authentication failed! Please check the request"
+			message: "Please provide 'username' and 'password' parameters"
 		});
 	}
 })
