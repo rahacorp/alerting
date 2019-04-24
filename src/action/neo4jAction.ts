@@ -16,6 +16,11 @@ export class Neo4jAction implements Action {
 		this.relations = relations;
 	}
 
+	private mergeWithNearAlerts() {
+		//count alerts || hiddenAlerts with rule name + pkg in current time window
+		//if count > treshold => 
+	}
+
 	act(obj: any, sourceID: string, relations: any, rule: Rule) {
 		let action = this;
 		return new Promise(async (resolve, reject) => {
