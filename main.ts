@@ -339,6 +339,14 @@ if (process.argv.length < 3) {
 			extended: true
 		})
 	);
+
+	//enable cors
+	app.use(function(req, res, next) {
+		res.header("Access-Control-Allow-Origin", "*");
+		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+		next();
+	});
+
 	// app.use(.unless({ path: ["/auth"] }));
 	// app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
 	app.use("/api", ApiController);
