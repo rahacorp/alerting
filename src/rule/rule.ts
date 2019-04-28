@@ -59,19 +59,8 @@ export class Rule {
 					for (let postProcess of ii.post_process) {
 						if (postProcess.iterate) {
 							//it's iterator
-							let action: Action = this.parseAction(
-								postProcess.action
-							);
 							input.addPostProcess(
-								new PostProcessIterate(
-									postProcess.condition,
-									this.context,
-									action,
-									postProcess.iterate.iterateObject,
-									postProcess.iterate.iterateDestination,
-									postProcess.iterate.condition,
-									this
-								)
+								this.parsePostProcessIterate(postProcess)
 							);
 						}
 					}
@@ -93,7 +82,33 @@ export class Rule {
         } else {
             this.context.set('last_successful_check', '2010-01-01T00:00:00.000Z')
         }
-    }
+	}
+	
+	parsePostProcessIterate(postProcess: any) : PostProcessIterate {
+		let action: Action = undefined
+		let innerIterate: PostProcessIterate = undefined
+		if(postProcess.action) {
+			action = this.parseAction(
+				postProcess.action
+			);
+		}
+		
+		if(postProcess.iterate.iterate) {
+			innerIterate = this.parsePostProcessIterate(postProcess.iterate)
+		}
+		
+		return new PostProcessIterate(
+			postProcess.condition,
+			this.context,
+			action,
+			postProcess.iterate.iterateObject,
+			postProcess.iterate.iterateDestination,
+			postProcess.iterate.condition,
+			innerIterate,
+			this
+		)
+		
+	}
 
     static fromFile(fileName: string): Rule {
         let data = fs.readFileSync(fileName).toString()

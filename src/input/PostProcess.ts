@@ -8,5 +8,6 @@ export interface PostProcess {
     action: Action
     rule: Rule
     
+    conditionMet(): boolean
     execute(): Promise<any>
 }

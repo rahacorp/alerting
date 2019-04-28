@@ -11,22 +11,33 @@ export class PostProcessIterate implements PostProcess {
     iterateObject: string
     iterateObjectName: string
     iterateCondition: string //ctx.obj._source.eventID = 1
+    innerIterate: PostProcessIterate
     rule: Rule
 
 
-    constructor(condition: string, context: Context, action: Action, iterateObject: string, iterateObjectName: string, iterateCondition: string, rule: Rule) {
-        this.condition = condition
+    constructor(condition: string, context: Context, action: Action, iterateObject: string, 
+        iterateObjectName: string, iterateCondition: string, innerIterate: PostProcessIterate, rule: Rule) {
+        // this.condition = condition
         this.context = context
         this.action = action
         this.iterateObject = iterateObject
         this.iterateObjectName = iterateObjectName
         this.iterateCondition = iterateCondition
+        this.innerIterate = innerIterate
         this.rule = rule
+    }
+
+    conditionMet() {
+        if(this.condition) {
+            return this.context.evaluate(this.condition)
+        } else {
+            return true
+        }
     }
 
     execute() {
         return new Promise(async (resolve, reject) => {
-            if (this.context.evaluate(this.condition)) {
+            if (this.conditionMet()) {
                 console.log('postprocess eval true')
                 let objects = this.context.get(this.iterateObject)
                 for (let obj of objects) {
@@ -37,10 +48,15 @@ export class PostProcessIterate implements PostProcess {
                         // if(obj._id && obj._index) {
                             // sourceID = obj._index + '/' + obj._id
                         // }
-                        let sourceID = crypto.createHash('sha1').update(JSON.stringify(obj)).digest('hex') + ':' + new Date().toLocaleDateString()
-                        console.log('postprocess action:', sourceID)
-                        let actionResp = await this.action.act(obj, sourceID, {}, this.rule)
-                        console.log('postprocess dn action', actionResp)
+                        if(this.innerIterate) {
+                            await this.innerIterate.execute()
+                        }
+                        if(this.action) {
+                            let sourceID = crypto.createHash('sha1').update(JSON.stringify(obj)).digest('hex') + ':' + new Date().toLocaleDateString()
+                            console.log('postprocess action:', sourceID, obj)
+                            let actionResp = await this.action.act(obj, sourceID, {}, this.rule)
+                            console.log('postprocess dn action', actionResp)
+                        }
                     } else {
                         console.log('iterate condition is false : ' + this.iterateCondition)
                     }
