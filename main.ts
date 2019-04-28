@@ -9,7 +9,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import jwt from "express-jwt";
 
-import { ApiController, AuthController } from "./src/webapp/Controllers";
+import { ApiController, AuthController, StatsController } from "./src/webapp/Controllers";
 
 const app: express.Application = express();
 const port: number = parseInt(process.env.PORT) || 8080;
@@ -351,6 +351,7 @@ if (process.argv.length < 3) {
 	// app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
 	app.use("/api", ApiController);
 	app.use("/auth", AuthController);
+	app.use("/stats", StatsController);
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
 		Startup.runAllRulesPriodically();
