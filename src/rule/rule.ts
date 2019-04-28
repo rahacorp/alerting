@@ -105,6 +105,7 @@ export class Rule {
 			postProcess.iterate.iterateDestination,
 			postProcess.iterate.condition,
 			innerIterate,
+			postProcess.iterate.key ? JSON.parse(postProcess.iterate.key) : undefined,
 			this
 		)
 		

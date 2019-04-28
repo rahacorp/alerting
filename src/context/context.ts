@@ -68,7 +68,12 @@ export class Context {
 			return retVal
 		} else {
 			if (typeof val == "string") {
-				return format.default(val, this.vm.run("return ctx"));
+				if(val.startsWith('%') && val.endsWith('%')) {
+					//it's an object, get it
+					return this.formatObject(this.get(val.substr(1, val.length - 2)))
+				} else {
+					return format.default(val, this.vm.run("return ctx"));
+				}
 			} else {
 				return val;
 			}

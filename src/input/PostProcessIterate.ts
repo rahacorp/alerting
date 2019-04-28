@@ -12,11 +12,13 @@ export class PostProcessIterate implements PostProcess {
     iterateObjectName: string
     iterateCondition: string //ctx.obj._source.eventID = 1
     innerIterate: PostProcessIterate
+    key: any
     rule: Rule
 
 
     constructor(condition: string, context: Context, action: Action, iterateObject: string, 
-        iterateObjectName: string, iterateCondition: string, innerIterate: PostProcessIterate, rule: Rule) {
+        iterateObjectName: string, iterateCondition: string, innerIterate: PostProcessIterate,
+        key: any, rule: Rule) {
         // this.condition = condition
         this.context = context
         this.action = action
@@ -24,6 +26,7 @@ export class PostProcessIterate implements PostProcess {
         this.iterateObjectName = iterateObjectName
         this.iterateCondition = iterateCondition
         this.innerIterate = innerIterate
+        this.key = key
         this.rule = rule
     }
 
@@ -52,9 +55,13 @@ export class PostProcessIterate implements PostProcess {
                             await this.innerIterate.execute()
                         }
                         if(this.action) {
-                            let sourceID = crypto.createHash('sha1').update(JSON.stringify(obj)).digest('hex') + ':' + new Date().toLocaleDateString()
-                            console.log('postprocess action:', sourceID, obj)
-                            let actionResp = await this.action.act(obj, sourceID, {}, this.rule)
+                            let sourceObj = obj
+                            if(this.key) {
+                                sourceObj = this.context.formatObject(this.key)
+                            }
+                            let sourceID = crypto.createHash('sha1').update(JSON.stringify(sourceObj)).digest('hex') + ':' + new Date().toLocaleDateString()
+                            console.log('postprocess action:', sourceID, sourceObj)
+                            let actionResp = await this.action.act(sourceObj, sourceID, {}, this.rule)
                             console.log('postprocess dn action', actionResp)
                         }
                     } else {
