@@ -40,7 +40,8 @@ async function getAlertObjectsFromResults(result) {
 			state: state
 		}
 		let relations = await session.run(
-			"Match (n)<-[r]-(a:Alert) where (n:ADUser OR n:ADComputer OR n:User) AND ID(a) = {alertId} RETURN n, LABELS(n)",
+			"Match (n)<-[r]-(a:Alert)<-[r2:TRIGGERED]-(ru:Rule) where (n:ADUser OR n:ADComputer OR n:User) " + 
+			" AND ID(a) = {alertId} RETURN n, LABELS(n), ru.severity, ru.tags",
 			{ alertId: fields[0] }
 		)
 		for(let related of relations.records) {
@@ -48,17 +49,23 @@ async function getAlertObjectsFromResults(result) {
 			if(related._fields[1].includes('ADComputer')) {
 				currentAlert.computers[related._fields[0].properties.objectSid] = {
 					objectSid: related._fields[0].properties.objectSid,
-					label: related._fields[0].properties.dNSHostName
+					label: related._fields[0].properties.dNSHostName,
+					severity: related._fields[2] ? related._fields[2].toInt() : 1,
+					tags: related._fields[3] ? related._fields[3] : []
 				}
 			} else if(related._fields[1].includes('ADUser')) {
 				currentAlert.users[related._fields[0].properties.objectSid] = {
 					objectSid: related._fields[0].properties.objectSid,
-					label: related._fields[0].properties.logonName
+					label: related._fields[0].properties.logonName,
+					severity: related._fields[2] ? related._fields[2].toInt() : 1,
+					tags: related._fields[3] ? related._fields[3] : []
 				}
 			}  else if(related._fields[1].includes('User')) {
 				currentAlert.assignedTo[related._fields[0].properties.username] = {
 					role: related._fields[0].properties.role,
-					label: related._fields[0].properties.username
+					label: related._fields[0].properties.username,
+					severity: related._fields[2] ? related._fields[2].toInt() : 1,
+					tags: related._fields[3] ? related._fields[3] : []
 				}
 			}
 		}

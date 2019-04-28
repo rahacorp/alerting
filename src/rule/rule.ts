@@ -9,6 +9,7 @@ import { Input } from "../input/Input";
 import { ClientFactory } from "../clientFactory/ClientFactory";
 import * as fs from "fs";
 import { Neo4jAction } from "../action/neo4jAction";
+import {v1 as neo4j} from 'neo4j-driver'
 
 export class Rule {
 	context: Context;
@@ -285,10 +286,12 @@ export class Rule {
 		return new Promise((resolve, reject) => {
 			try {
 				let session = ClientFactory.createClient("neo4j_session")
-
-				let q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON CREATE SET rule.data = {data}"
+				let ruleObj = JSON.parse(this.data)
+				let q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePkg} }) ON CREATE SET rule.data = {data}, " +
+				"rule.status = {status}, rule.description = {description}, rule.severity = {severity}, " + 
+				"rule.author = {author}, rule.references = {references}, rule.tags = {tags}"
 				if(update) {
-					q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePackage} }) ON MATCH SET rule.data = {data}"
+					q = q.replace("ON CREATE SET", "ON MATCH SET")
 					if(lastSuccessTime) {
 						q += ", rule.last_successful_check = {lastSuccess}"
 					}
@@ -298,9 +301,15 @@ export class Rule {
 						q,
 						{
 							ruleName: this.name,
-							rulePackage: this.pkg,
+							rulePkg: this.pkg,
 							data: this.data,
-							lastSuccess: lastSuccessTime
+							status: ruleObj.status,
+							description: ruleObj.description,
+							severity: neo4j.int(ruleObj.severity),
+							author: ruleObj.author,
+							references: ruleObj.references,
+							tags: ruleObj.tags,
+							lastSuccess: lastSuccessTime,
 						}
 					)
 					.then(function(result) {
