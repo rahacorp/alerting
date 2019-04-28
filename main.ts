@@ -349,6 +349,7 @@ if (process.argv.length < 3) {
 
 	// app.use(.unless({ path: ["/auth"] }));
 	// app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
+	
 	app.use("/api", ApiController);
 	app.use("/auth", AuthController);
 	app.use("/stats", StatsController);
