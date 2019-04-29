@@ -3,6 +3,9 @@ import { ClientFactory } from "../clientFactory/ClientFactory";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
+import expressPerm from "express-jwt-permissions";
+const guard = expressPerm();
+
 // Assign router to the express.Router() instance
 const router: Router = Router();
 
@@ -13,7 +16,24 @@ function getHashedPassword(pass: string) {
 		.digest("hex");
 }
 
-router.post("/register", (req: Request, res: Response) => {
+function getPermissionsByRole(role: string) {
+	let permissions = []
+	if(role === 'admin') {
+		permissions = ['process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
+		'adcomputer:read', 'aduser:read', 'user:read', 'log:read', 'user:create', 'user:reset_password']
+	} 
+	if(role === 'viewer') {
+		permissions = ['process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
+		'adcomputer:read', 'aduser:read', 'user:read', 'log:read']
+	}
+	if(role === 'responder') {
+		permissions = ['process:read', 'alert:read', 'alert:write', 'adcomputer:read', 'aduser:read',
+		 'user:read', 'log:read']
+	}
+	return permissions
+}
+
+router.post("/register", guard.check('user:create'), (req: Request, res: Response) => {
 	console.log(req.body);
 	if (!req.body.username) {
 		return res.status(400).json({
@@ -93,7 +113,7 @@ router.post("/login", async (req: Request, res: Response) => {
 				let record = users.records[0];
 				let payload = {
 					username: username,
-					permissions: [record.get("role")]
+					permissions: getPermissionsByRole(record.get("role"))
 				};
 				console.log(payload);
 				let token = jwt.sign(payload, "shhhhhhared-secret", {
@@ -104,7 +124,8 @@ router.post("/login", async (req: Request, res: Response) => {
 					success: true,
 					message: "Authentication successful!",
 					token: token,
-					roles: payload.permissions
+					roles: [record.get("role")],
+					permissions: payload.permissions
 				});
 			} else {
 				res.status(403).json({
@@ -126,7 +147,7 @@ router.post("/login", async (req: Request, res: Response) => {
 	}
 });
 
-router.post("/resetPassword", async (req: Request, res: Response) => {
+router.post("/resetPassword", guard.check('user:reset_password'), async (req: Request, res: Response) => {
 	let username = req.body.username;
 	let password = req.body.password;
 

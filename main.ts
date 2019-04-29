@@ -349,7 +349,9 @@ if (process.argv.length < 3) {
 
 	// app.use(.unless({ path: ["/auth"] }));
 	// app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
+	// app.use("/auth", jwt({ secret: "shhhhhhared-secret" }), AuthController);
 
+	app.use(jwt({ secret: 'shhhhhhared-secret'}).unless({path: ['/auth/login']}));
 
 	app.use("/api", ApiController);
 
@@ -357,7 +359,7 @@ if (process.argv.length < 3) {
 	app.use("/stats2", StatsController);
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
-		Startup.runAllRulesPriodically();
+		// Startup.runAllRulesPriodically();
 	});
 } else {
 	if (process.argv[2] == "-help") {

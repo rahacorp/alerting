@@ -32,7 +32,8 @@ export class Neo4jAction implements Action {
 					"MATCH (rule:Rule {name : {ruleName}, package: {rulePackage} }) " +
 						"MERGE (alert:Alert {sourceID : {sourceID} }) " +
 						"MERGE (rule)-[r:TRIGGERED]->(alert) " +
-						"ON CREATE SET alert.data = {data}, alert.created_at = TIMESTAMP(), alert.state = 'initialized'",
+						"ON CREATE SET alert.data = {data}, alert.created_at = TIMESTAMP(), " + 
+						"alert.state = 'initialized', alert.message = {message}",
 					{
 						ruleName: rule.name,
 						rulePackage: rule.pkg,
