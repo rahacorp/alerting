@@ -36,6 +36,9 @@ export class ADSynchronizer {
 				} else {
 					for (let group of groups) {
 						console.log(group);
+						if(!group.description) {
+							group.description = ''
+						}
 						synchronizer.neo4jSession
 							.run(
 								"MERGE (group:ADGroup {dn : {dn} }) ON CREATE SET group.cn = {cn}, group.description = {description}",
