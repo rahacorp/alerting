@@ -248,13 +248,13 @@ router.get('/getAlerts', guard.check('alert:read'), (req: Request, res: Response
 			}
 		}
 	}
+	let returnOrder = 'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state, c ' +
+	'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}'
 	if (req.query.user) {
 		const session = ClientFactory.createClient("neo4j_session")
+		let q = 'MATCH (um:ADUser)<-[r2:RELATED_TO]-(n:Alert) where um.objectSid = {sid} '
 		session
-			.run('MATCH (um:ADUser)<-[r2:RELATED_TO]-(n:Alert) where um.objectSid = {sid} WITH count(*) as c ' +
-				'MATCH (um:ADUser)<-[r2:RELATED_TO]-(n:Alert) where um.objectSid = {sid} ' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state, c ' +
-				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
+			.run(q + ' WITH count(*) as c ' + q + returnOrder, {
 					sid: req.query.user,
 					skip: skip,
 					limit: limit
@@ -275,11 +275,9 @@ router.get('/getAlerts', guard.check('alert:read'), (req: Request, res: Response
 			});
 	} if (req.query.user2) {
 		const session = ClientFactory.createClient("neo4j_session")
+		let q = 'MATCH (um:User)<-[r2:ASSIGNED_TO]-(n:Alert) where um.username = {username} '
 		session
-			.run('MATCH (um:User)<-[r2:ASSIGNED_TO]-(n:Alert) where um.username = {username} WITH count(*) as c ' +
-				'MATCH (um:User)<-[r2:ASSIGNED_TO]-(n:Alert) where um.username = {username} ' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state, c ' +
-				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
+			.run(q + ' WITH count(*) as c ' + q + returnOrder, {
 					username: req.query.user2,
 					skip: skip,
 					limit: limit
@@ -300,11 +298,9 @@ router.get('/getAlerts', guard.check('alert:read'), (req: Request, res: Response
 			});
 	} else if (req.query.computer) {
 		const session = ClientFactory.createClient("neo4j_session");
+		let q = 'MATCH (cm:ADComputer)<-[r2:RELATED_TO]-(n:Alert) where cm.objectSid = {sid} '
 		session
-			.run('MATCH (cm:ADComputer)<-[r2:RELATED_TO]-(n:Alert) where cm.objectSid = {sid} WITH count(*) as c ' +
-				'MATCH (cm:ADComputer)<-[r2:RELATED_TO]-(n:Alert) where cm.objectSid = {sid} ' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state, c ' +
-				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
+			.run(q + ' WITH count(*) as c ' + q + returnOrder, {
 					sid: req.query.computer,
 					skip: skip,
 					limit: limit
@@ -325,11 +321,9 @@ router.get('/getAlerts', guard.check('alert:read'), (req: Request, res: Response
 			});
 	} else {
 		const session = ClientFactory.createClient("neo4j_session");
+		let q = 'MATCH (n:Alert) '
 		session
-			.run('MATCH (n:Alert) WITH count(*) as c ' +
-				'MATCH (n:Alert) ' +
-				'RETURN ID(n), n.created_at, datetime({epochmillis:n.created_at}), n.sourceID, n.data, n.state, c ' +
-				'ORDER BY n.created_at desc SKIP {skip} LIMIT {limit}', {
+			.run(q + ' WITH count(*) as c ' + q + returnOrder, {
 					skip: skip,
 					limit: limit
 				})
