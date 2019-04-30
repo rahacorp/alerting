@@ -148,7 +148,7 @@ export class Rule {
 		if (action.type == "console") {
 			return new LogAction(action.name);
 		} else if (action.type == "alert") {
-			return new Neo4jAction(action.name, this.context, action.relations);
+			return new Neo4jAction(action.name, this.context, action.relations, action.message);
 		} else {
 			console.log("trigger type not supported :" + action.type);
 			return null;

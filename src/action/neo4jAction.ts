@@ -8,12 +8,14 @@ export class Neo4jAction implements Action {
 	neo4jClient: any;
 	context: Context;
 	relations: any;
+	message: string;
 
-	constructor(name: string, context: Context, relations: any) {
+	constructor(name: string, context: Context, relations: any, message: string) {
 		this.name = name;
 		this.neo4jClient = ClientFactory.createClient("neo4j");
 		this.context = context;
 		this.relations = relations;
+		this.message = message;
 	}
 
 	private mergeWithNearAlerts() {
@@ -38,7 +40,8 @@ export class Neo4jAction implements Action {
 						ruleName: rule.name,
 						rulePackage: rule.pkg,
 						sourceID: rule.name + ":" + sourceID,
-						data: JSON.stringify(obj)
+						data: JSON.stringify(obj),
+						message: this.message || ''
 					}
 				);
 				console.log('alert created : ', result.summary.counters._stats);
