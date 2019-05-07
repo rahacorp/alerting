@@ -110,7 +110,6 @@ export class ADSynchronizer {
 				console.log(`ERROR: ${JSON.stringify(err)}`);
 				return;
 			}
-
 			if (!users || users.length === 0) {
 				console.log("No users found.");
 			} else {

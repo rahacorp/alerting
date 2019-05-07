@@ -76,7 +76,7 @@ class Startup {
 			let ruleName = args[2];
 			let allRules = await Rule.list(pkg, ruleName);
 			let promises = [];
-
+			console.log(allRules)
 			/*
 			allRules.forEach(rule => {
 				promises.push(rule.fire())
@@ -97,7 +97,7 @@ class Startup {
 			for (let ruleName of Array.from(allRules.keys())) {
 				console.log(ruleName);
 				await allRules.get(ruleName).fire();
-				// console.log('fire await done')
+				console.log('fire await done')
 			}
 			process.exit();
 		} else if (args[0] === "list") {
@@ -356,7 +356,7 @@ if (process.argv.length < 3) {
 	app.use("/api", ApiController);
 
 	app.use("/auth", AuthController);
-	app.use("/stats2", StatsController);
+	app.use("/stats", StatsController);
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
 		// Startup.runAllRulesPriodically();

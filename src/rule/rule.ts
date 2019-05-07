@@ -10,6 +10,7 @@ import { ClientFactory } from "../clientFactory/ClientFactory";
 import * as fs from "fs";
 import { Neo4jAction } from "../action/neo4jAction";
 import {v1 as neo4j} from 'neo4j-driver'
+import crypto from 'crypto'
 
 export class Rule {
 	context: Context;
@@ -148,7 +149,9 @@ export class Rule {
 		if (action.type == "console") {
 			return new LogAction(action.name);
 		} else if (action.type == "alert") {
-			return new Neo4jAction(action.name, this.context, action.relations, action.message);
+			let hash = this.pkg + ":" + this.name + ":" + 
+				crypto.createHash('sha1').update(JSON.stringify(action)).digest('hex')
+			return new Neo4jAction(action.name, this.context, action.relations, action.message, hash);
 		} else {
 			console.log("trigger type not supported :" + action.type);
 			return null;

@@ -49,6 +49,8 @@
     "material-ui-search-bar": "^0.4.2",
     "moment": "^2.24.0",
     "neo4j-driver": "^1.7.2",
+    "pino": "^5.12.3",
+    "pino-pretty": "^3.0.0",
     "react": "^16.8.0-alpha.1",
     "react-animated-number": "^0.4.4",
     "react-awesome-modal": "^2.0.5",

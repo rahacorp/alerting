@@ -216,6 +216,10 @@ router.get('/alert/:alertId', guard.check('alert:read'), (req: Request, res: Res
 				if(alerts.length == 0) {
 					res.status(404)
 				}
+				//find comments
+				
+
+
 				res.send(alerts[0]);
 			})
 			.catch((error) => {
@@ -437,6 +441,47 @@ router.post('/alert/:alertId/setState', guard.check('alert:write'), async (req: 
 			res.status(400).json({
 				success: false,
 				message: 'assign did not change'
+			})
+		}
+	} catch (err) {
+		res.status(400).json({
+			success: false,
+			message: err.message
+		});
+	}
+	
+})
+
+router.post('/alert/:alertId/comment', guard.check('alert:write'), async (req: Request, res: Response) => {
+	console.log(req.user)
+	if(!req.body.comment) {
+		return res.status(400).json({
+			success: false,
+			message: 'please provide "comment" parameter'
+		})
+	}
+	try {
+		let session = ClientFactory.createClient("neo4j_session");
+		let assign = await session.run(
+			"MATCH (a:Alert) WHERE ID(a) = {alertId} " + 
+			"MATCH (u:User {username: {username}}) " + 
+			"CREATE (c:Comment {text: {comment}}) SET c.created_at = TIMESTAMP() " + 
+			"CREATE (a)<-[com:COMMENT_OF]-(c)<-[w:WRITTEN]-(u) ",
+			{ 
+				comment: req.body.comment, 
+				username: req.user.username,
+				alertId: neo4j.int(req.params.alertId)
+			}
+		);
+		if (assign.summary.counters._stats.nodesCreated == 1) {
+			res.json({
+				success: true,
+				message: 'comment added successfully'
+			})
+		} else {
+			res.status(400).json({
+				success: false,
+				message: 'comment did not add'
 			})
 		}
 	} catch (err) {
