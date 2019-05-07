@@ -30,6 +30,9 @@ async function getAlertObjectsFromResults(result) {
 		let timestamp = new Date(fields[2].toString())
 		let sourceID = fields[3]
 		let data = fields[4]
+		if(data instanceof Array) {
+			data = '{' + data.join(', ') + '}'
+		}
 		let state = fields[5]
 		currentAlert = {
 			id: fields[0].toNumber(),
