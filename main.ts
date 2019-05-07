@@ -69,8 +69,9 @@ class Startup {
 			let adSync = new ADSynchronizer();
 			let grp = await adSync.syncAllGroups();
 			console.log(grp);
-			adSync.syncAllUsersAndGroups();
-			adSync.syncAllComputers();
+			await adSync.syncAllUsersAndGroups();
+			await adSync.syncAllComputers();
+			process.exit();
 		} else if (args[0] === "run") {
 			let pkg = args[1];
 			let ruleName = args[2];
