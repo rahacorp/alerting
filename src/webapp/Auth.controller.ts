@@ -33,7 +33,7 @@ function getPermissionsByRole(role: string) {
 	return permissions
 }
 
-router.post("/register", guard.check('user:create'), (req: Request, res: Response) => {
+router.post("/register", /*guard.check('user:create'),*/ (req: Request, res: Response) => {
 	console.log(req.body);
 	if (!req.body.username) {
 		return res.status(400).json({
@@ -147,7 +147,7 @@ router.post("/login", async (req: Request, res: Response) => {
 	}
 });
 
-router.post("/resetPassword", guard.check('user:reset_password'), async (req: Request, res: Response) => {
+router.post("/resetPassword", /*guard.check('user:reset_password'),*/ async (req: Request, res: Response) => {
 	let username = req.body.username;
 	let password = req.body.password;
 

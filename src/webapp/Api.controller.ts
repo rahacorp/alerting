@@ -31,7 +31,7 @@ async function getAlertObjectsFromResults(result) {
 		let sourceID = fields[3]
 		let data = fields[4]
 		if(data instanceof Array) {
-			data = '{' + data.join(', ') + '}'
+			data = '[' + data.join(', ') + ']'
 		}
 		let state = fields[5]
 		currentAlert = {
@@ -113,7 +113,7 @@ function children(main, parentID) {
 	return resp
 }
 
-router.get('/process', guard.check('process:read'), (req: Request, res: Response) => {
+router.get('/process', /*guard.check('process:read'),*/ (req: Request, res: Response) => {
 	console.log(req.query)
 	const session = ClientFactory.createClient("neo4j_session")
 	session
@@ -207,7 +207,7 @@ router.get('/process', guard.check('process:read'), (req: Request, res: Response
 		});
 });
 
-router.get('/alert/:alertId', guard.check('alert:read'), (req: Request, res: Response) => {
+router.get('/alert/:alertId', /*guard.check('alert:read'),*/ (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session");
 		session
 			.run('MATCH (n:Alert) WHERE ID(n) = {alertId} ' +
@@ -234,7 +234,7 @@ router.get('/alert/:alertId', guard.check('alert:read'), (req: Request, res: Res
 			});
 })
 
-router.get('/getAlerts', guard.check('alert:read'), (req: Request, res: Response) => {
+router.get('/getAlerts', /*guard.check('alert:read'),*/ (req: Request, res: Response) => {
 	console.log(req.query);
 	let limit = 50
 	let skip = 0
@@ -352,7 +352,7 @@ router.get('/getAlerts', guard.check('alert:read'), (req: Request, res: Response
 	// res.send('done2');
 });
 
-router.post('/alert/:alertId/assign', guard.check('alert:assign'), async (req: Request, res: Response) => {
+router.post('/alert/:alertId/assign', /*guard.check('alert:assign'),*/ async (req: Request, res: Response) => {
 	if(!req.body.username) {
 		return res.status(400).json({
 			success: false,
@@ -385,7 +385,7 @@ router.post('/alert/:alertId/assign', guard.check('alert:assign'), async (req: R
 	
 })
 
-router.post('/alert/:alertId/unassign', guard.check('alert:unassign'), async (req: Request, res: Response) => {
+router.post('/alert/:alertId/unassign', /*guard.check('alert:unassign'),*/ async (req: Request, res: Response) => {
 	if(!req.body.username) {
 		return res.status(400).json({
 			success: false,
@@ -417,7 +417,7 @@ router.post('/alert/:alertId/unassign', guard.check('alert:unassign'), async (re
 	}
 })
 
-router.post('/alert/:alertId/setState', guard.check('alert:write'), async (req: Request, res: Response) => {
+router.post('/alert/:alertId/setState', /*guard.check('alert:write'),*/ async (req: Request, res: Response) => {
 	if(!req.body.state) {
 		return res.status(400).json({
 			success: false,
@@ -455,7 +455,7 @@ router.post('/alert/:alertId/setState', guard.check('alert:write'), async (req: 
 	
 })
 
-router.post('/alert/:alertId/comment', guard.check('alert:write'), async (req: Request, res: Response) => {
+router.post('/alert/:alertId/comment', /*guard.check('alert:write'),*/ async (req: Request, res: Response) => {
 	console.log(req.user)
 	if(!req.body.comment) {
 		return res.status(400).json({
@@ -496,7 +496,7 @@ router.post('/alert/:alertId/comment', guard.check('alert:write'), async (req: R
 	
 })
 
-router.get('/computer', guard.check('adcomputer:read'), (req: Request, res: Response) => {
+router.get('/computer', /*guard.check('adcomputer:read'),*/ (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")
 	session
 		.run('MATCH (n:ADComputer {objectSid: {sid} }) RETURN n', {
@@ -516,7 +516,7 @@ router.get('/computer', guard.check('adcomputer:read'), (req: Request, res: Resp
 		});
 });
 
-router.get('/computers', guard.check('adcomputer:read'), (req: Request, res: Response) => {
+router.get('/computers', /*guard.check('adcomputer:read'),*/ (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")
 	session
 		.run('MATCH (n:ADComputer) RETURN n')
@@ -532,7 +532,7 @@ router.get('/computers', guard.check('adcomputer:read'), (req: Request, res: Res
 		});
 });
 
-router.get('/user', guard.check('aduser:read'), (req: Request, res: Response) => {
+router.get('/user', /*guard.check('aduser:read'),*/ (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")
 	session
 		.run('MATCH (n:ADUser {objectSid: {sid} }) RETURN n', {
@@ -552,7 +552,7 @@ router.get('/user', guard.check('aduser:read'), (req: Request, res: Response) =>
 		});
 });
 
-router.get('/users', guard.check('aduser:read'), (req: Request, res: Response) => {
+router.get('/users', /*guard.check('aduser:read'),*/ (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")
 	session
 		.run('MATCH (n:ADUser) RETURN n')
@@ -568,7 +568,7 @@ router.get('/users', guard.check('aduser:read'), (req: Request, res: Response) =
 		});
 });
 
-router.get('/users2', guard.check('user:read'), (req: Request, res: Response) => {
+router.get('/users2', /*guard.check('user:read'),*/ (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")
 	session
 		.run('MATCH (n:User) RETURN n')
@@ -587,7 +587,7 @@ router.get('/users2', guard.check('user:read'), (req: Request, res: Response) =>
 		});
 });
 
-router.get('/logs', guard.check('log:read'), async function (req: Request, res: Response) {
+router.get('/logs', /*guard.check('log:read'),*/ async function (req: Request, res: Response) {
 	let elasticClient = ClientFactory.createClient('elastic')
 	let limit = 50
 	let skip = 0
@@ -632,7 +632,7 @@ router.get('/logs', guard.check('log:read'), async function (req: Request, res: 
 	})
 })
 
-router.get('/logCount', guard.check(['log:read', 'alert:read']), async function (req: Request, res: Response) {
+router.get('/logCount', /*guard.check(['log:read', 'alert:read']),*/ async function (req: Request, res: Response) {
     let elasticClient = ClientFactory.createClient('elastic')
 	//MATCH (n:Alert) RETURN count(*) as cnt
 	const { count } = await elasticClient.count();
@@ -674,7 +674,7 @@ router.get('/suggest', async function (req: Request, res: Response) {
 	res.send(response.aggregations.tagg.buckets)
 })
 
-router.get('/searchObjects', guard.check(['aduser:read', 'adcomputer:read']), async (req: Request, res: Response) => {
+router.get('/searchObjects', /*guard.check(['aduser:read', 'adcomputer:read']),*/ async (req: Request, res: Response) => {
 	if(!req.query.q) {
 		return res.status(400).json({
 			success: false,
