@@ -71,7 +71,7 @@ class Startup {
 			console.log(grp);
 			await adSync.syncAllUsersAndGroups();
 			await adSync.syncAllComputers();
-			process.exit();
+			// process.exit();
 		} else if (args[0] === "run") {
 			let pkg = args[1];
 			let ruleName = args[2];
@@ -360,7 +360,7 @@ if (process.argv.length < 3) {
 	app.use("/stats", StatsController);
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
-		// Startup.runAllRulesPriodically();
+		Startup.runAllRulesPriodically();
 	});
 } else {
 	if (process.argv[2] == "-help") {
