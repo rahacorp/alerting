@@ -19,15 +19,15 @@ function getHashedPassword(pass: string) {
 function getPermissionsByRole(role: string) {
 	let permissions = []
 	if(role === 'admin') {
-		permissions = ['process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
+		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
 		'adcomputer:read', 'aduser:read', 'user:read', 'log:read', 'user:create', 'user:reset_password']
 	} 
 	if(role === 'viewer') {
-		permissions = ['process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
+		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
 		'adcomputer:read', 'aduser:read', 'user:read', 'log:read']
 	}
 	if(role === 'responder') {
-		permissions = ['process:read', 'alert:read', 'alert:write', 'adcomputer:read', 'aduser:read',
+		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:write', 'adcomputer:read', 'aduser:read',
 		 'user:read', 'log:read']
 	}
 	return permissions
@@ -146,6 +146,12 @@ router.post("/login", async (req: Request, res: Response) => {
 		});
 	}
 });
+
+router.get('/self', guard.check('user:self'), (req: any, res: Response) => {
+	let resp = JSON.parse(JSON.stringify(req.user))
+	resp.role = resp.permissions[0]
+	res.send(resp)
+})
 
 router.post("/resetPassword", guard.check('user:reset_password'), async (req: Request, res: Response) => {
 	let username = req.body.username;
