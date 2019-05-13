@@ -8,7 +8,7 @@ const guard = expressPerm();
 // Assign router to the express.Router() instance
 const router: Router = Router();
 
-router.get('/riskyUsers', guard.check('adcomputer:read'), async (req: Request, res: Response) => {
+router.get('/riskyUsers', guard.check('aduser:read'), async (req: Request, res: Response) => {
 	try {
 		let session = ClientFactory.createClient("neo4j_session");
 		let result = await session.run(
@@ -36,7 +36,7 @@ router.get('/riskyUsers', guard.check('adcomputer:read'), async (req: Request, r
 })
 
 
-router.get('/riskyComputers', guard.check('aduser:read'), async (req: Request, res: Response) => {
+router.get('/riskyComputers', guard.check('adcomputer:read'), async (req: Request, res: Response) => {
 	try {
 		let session = ClientFactory.createClient("neo4j_session");
 		let result = await session.run(
@@ -55,6 +55,46 @@ router.get('/riskyComputers', guard.check('aduser:read'), async (req: Request, r
 			success: true,
 			computers: computers
 		})
+	} catch (err) {
+		res.status(400).json({
+			success: false,
+			message: err.message
+		});
+	}
+})
+
+router.get('/latestLogs', guard.check('log:read'), async (req: Request, res: Response) => {
+	try {
+		let elasticClient = ClientFactory.createClient('elastic')
+		// req.query.field
+		// req.query.prefix
+		let body = {
+			"size": 0, 
+			"query": {
+			  "range": {
+				  "@timestamp": {
+					  "gte": "now-30h"
+				  }
+			  }
+		  },
+			"aggs" : {
+				  "histogram" : {
+					  "date_histogram" : {
+						  "field" : "@timestamp",
+						  "min_doc_count" : 0,
+						  "interval": "1h"
+					  }
+				  }
+			  }
+		  }
+		console.log(body)
+		const response = await elasticClient.search({
+			index: 'winlogbeat-*',
+			size: 0,
+			body: body
+		})
+		console.log(response)
+		res.send(response.aggregations.histogram.buckets)
 	} catch (err) {
 		res.status(400).json({
 			success: false,
