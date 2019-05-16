@@ -455,7 +455,7 @@ router.post('/alert/:alertId/setState', guard.check('alert:write'), async (req: 
 	
 })
 
-router.post('/alert/:alertId/comment', guard.check('alert:write'), async (req: Request, res: Response) => {
+router.post('/alert/:alertId/comment', guard.check('alert:write'), async (req: any, res: Response) => {
 	console.log(req.user)
 	if(!req.body.comment) {
 		return res.status(400).json({
