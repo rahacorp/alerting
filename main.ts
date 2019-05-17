@@ -16,6 +16,7 @@ const port: number = parseInt(process.env.PORT) || 8080;
 app.use(express.static("dist"));
 app.use(express.static("public"));
 /*
+
 app.use(function(err, req, res, next) {
 	if (err.code === "permission_denied") {
 		res.status(403).send("Forbidden");

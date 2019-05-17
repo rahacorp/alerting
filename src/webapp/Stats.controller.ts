@@ -159,5 +159,24 @@ router.get('/recentAgents', guard.check('log:read'), async (req: Request, res: R
 		});
 	}
 })
+
+router.get('/counts', guard.check(['log:read', 'alert:read', 'process:read', 'adcomputer:read', 'aduser:read']), async function (req: Request, res: Response) {
+    let elasticClient = ClientFactory.createClient('elastic')
+	//MATCH (n:Alert) RETURN count(*) as cnt
+	const { count } = await elasticClient.count();
+	const session = ClientFactory.createClient("neo4j_session")
+	let alertsResp = await session.run('MATCH (n:Alert) RETURN count(*) as cnt')
+	let adcomputersResp = await session.run('MATCH (n:ADComputer) RETURN count(*) as cnt')
+	let usersResp = await session.run('MATCH (n:ADUser) RETURN count(*) as cnt')
+	let processesResp = await session.run('MATCH (n:Process) RETURN count(*) as cnt')
+	res.send({
+		logs: count,
+		alerts: alertsResp.records[0]._fields[0].toInt(),
+		adcomputers: adcomputersResp.records[0]._fields[0].toInt(),
+		users: usersResp.records[0]._fields[0].toInt(),
+		processes: processesResp.records[0]._fields[0].toInt(),
+	})
+})
+
 // Export the express.Router() instance to be used by server.ts
 export const StatsController: Router = router;
