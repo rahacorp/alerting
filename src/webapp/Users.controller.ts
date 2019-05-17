@@ -2,8 +2,10 @@ import { Router, Request, Response } from "express";
 import { ClientFactory } from "../clientFactory/ClientFactory";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import Neode from "neode"
 
 import expressPerm from "express-jwt-permissions";
+import { Object } from "es6-shim";
 const guard = expressPerm();
 
 // Assign router to the express.Router() instance
@@ -20,7 +22,7 @@ function getPermissionsByRole(role: string) {
 	let permissions = []
 	if(role === 'admin') {
 		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
-		'adcomputer:read', 'aduser:read', 'user:read', 'log:read', 'user:create', 'user:reset_password', 'user:write', 'user:delete']
+		'adcomputer:read', 'aduser:read', 'user:read', 'log:read', 'user:create', 'user:reset_password', 'user:write']
 	} 
 	if(role === 'viewer') {
 		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
@@ -32,6 +34,127 @@ function getPermissionsByRole(role: string) {
 	}
 	return permissions
 }
+
+router.get('/', guard.check('user:read'), async (req: Request, res: Response) => {
+	let instacne = ClientFactory.createClient("neode") as Neode;
+	let users = await instacne.all('User')
+	let resp = []
+	for(let index = 0; index < users.length; index++) {
+		resp.push(await users.get(index).toJson())
+	}
+	console.log(resp)
+	res.json(resp)
+})
+
+router.post('/disable/:userID', guard.check('user:write'), async (req: Request, res: Response) => {
+	
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let user = await instacne.findById('User', req.params.userID)
+		if(!user) {
+			throw new Error('user not found')
+		}
+		let newUser = await user.update({
+			disabled: true
+		})
+		res.json(await newUser.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+})
+
+router.post('/enable/:userID', guard.check('user:write'), async (req: Request, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let user = await instacne.findById('User', req.params.userID)
+		if(!user) {
+			throw new Error('user not found')
+		}
+		let newUser = await user.update({
+			disabled: false
+		})
+		res.json(await newUser.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+})
+
+router.post('/update/:userID', guard.check('user:write'), async (req: Request, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let user = await instacne.findById('User', req.params.userID)
+		if(!user) {
+			throw new Error('user not found')
+		}
+		if(req.body.password) {
+			req.body.password = getHashedPassword(req.body.password)
+		}
+		let old = await user.toJson()
+		for(let key of Object.keys(req.body)) {
+			old[key] = req.body[key]
+		}
+		delete old['_id']
+		delete old['_labels']
+		let newUser = await user.update(old)
+		res.json(await newUser.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+})
+
+router.delete('/:userID', guard.check('user:delete'), async (req: Request, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let user = await instacne.findById('User', req.params.userID)
+		if(!user) {
+			throw new Error('user not found')
+		}
+		let delUser = await user.delete()
+		res.json(await delUser.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+	
+})
+
+router.put('/newUser', guard.check('user:create'), async (req: Request, res: Response) => {
+	try {
+		console.log(req.body)
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let user = await instacne.create('User', req.body)
+		if(!user) {
+			throw new Error('user not found')
+		}
+		res.json(await user.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+})
+
+router.get('/self', guard.check('user:self'), async (req: any, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let user = await instacne.model('User').find(req.user.username)
+		if(!user) {
+			throw new Error('user not found')
+		}
+		res.json(await user.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+})
 
 router.post("/register", guard.check('user:create'), (req: Request, res: Response) => {
 	console.log(req.body);
@@ -147,11 +270,7 @@ router.post("/login", async (req: Request, res: Response) => {
 	}
 });
 
-router.get('/self', guard.check('user:self'), (req: any, res: Response) => {
-	let resp = JSON.parse(JSON.stringify(req.user))
-	resp.role = resp.permissions[0]
-	res.send(resp)
-})
+
 
 router.post("/resetPassword", guard.check('user:reset_password'), async (req: Request, res: Response) => {
 	let username = req.body.username;
@@ -190,4 +309,4 @@ router.post("/resetPassword", guard.check('user:reset_password'), async (req: Re
 })
 
 // Export the express.Router() instance to be used by server.ts
-export const AuthController: Router = router;
+export const UserController: Router = router;

@@ -1,7 +1,14 @@
 import * as elastic from 'elasticsearch'
 import * as ActiveDirectory from 'activedirectory2'
+import Neode from 'neode'
 import {v1 as neo4j} from 'neo4j-driver'
 import config from '../../config.json'
+import ADComputer from '../ecoEntities/ADComputer'
+import ADDomain from '../ecoEntities/ADDomain'
+import ADUser from '../ecoEntities/ADUser'
+import File from '../ecoEntities/File'
+import Process from '../ecoEntities/Process'
+import User from '../ecoEntities/User'
 
 export class ClientFactory {
     static clients: any
@@ -30,6 +37,24 @@ export class ClientFactory {
                 let session = neo4jDriver.session()
                 ClientFactory.clients[type] = session
                 return session
+            } else if (type === 'neode') {
+                let instance = new Neode(config.neo4j.address, config.neo4j.username, config.neo4j.password);
+                instance.model('ADComputer', ADComputer.model)
+                instance.model('ADDomain', ADDomain.model)
+                instance.model('ADUser', ADUser.model)
+                instance.model('File', File.model)
+                instance.model('Process', Process.model)
+                instance.model('User', User.model)
+
+                instance.model('ADComputer').relationship('joined', "JOINED", "direction_out", "ADDomain")
+                instance.model('ADUser').relationship('joined', "JOINED", "direction_out", "ADDomain")
+                instance.model('ADUser').relationship('local_user_of', "LOCAL_USER_OF", "direction_out", "ADComputer")
+                instance.model('File').relationship('has_file', "HAS_FILE", "direction_out", "ADComputer")
+                instance.model('Process').relationship('child_of', "CHILD_OF", "direction_out", "Process")
+                instance.model('Process').relationship('has_user', "HAS_USER", "direction_out", "ADUser")
+                instance.schema.install()
+                ClientFactory.clients[type] = instance
+                return instance
             } else {
                 throw new Error('client type not supported :' + type)
             }
