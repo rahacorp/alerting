@@ -37,7 +37,26 @@ function getPermissionsByRole(role: string) {
 
 router.get('/', guard.check('user:read'), async (req: Request, res: Response) => {
 	let instacne = ClientFactory.createClient("neode") as Neode;
-	let users = await instacne.all('User')
+	let limit : number = 50
+	let skip : number = 0
+	if(req.query.limit) {
+		if(Number(req.query.limit)) {
+			limit = Number(req.query.limit)
+			if(limit > 100 || limit < 0) {
+				limit = 50
+			}
+		}
+	}
+
+	if(req.query.skip) {
+		if(Number(req.query.skip)) {
+			skip = Number(req.query.skip)
+			if(skip < 0) {
+				skip = 0
+			}
+		}
+	}
+	let users = await instacne.all('User', {}, [], limit, skip)
 	let resp = []
 	for(let index = 0; index < users.length; index++) {
 		let user = await users.get(index).toJson()
