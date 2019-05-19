@@ -9,7 +9,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import jwt from "express-jwt";
 
-import { ApiController, AuthController, StatsController, UserController } from "./src/webapp/Controllers";
+import { ApiController, AuthController, StatsController, UserController } from "./src/controllers/Controllers";
 
 const app: express.Application = express();
 const port: number = parseInt(process.env.PORT) || 8080;

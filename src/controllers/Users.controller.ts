@@ -40,9 +40,10 @@ router.get('/', guard.check('user:read'), async (req: Request, res: Response) =>
 	let users = await instacne.all('User')
 	let resp = []
 	for(let index = 0; index < users.length; index++) {
-		resp.push(await users.get(index).toJson())
+		let user = await users.get(index).toJson()
+		delete user['password'] 
+		resp.push(user)
 	}
-	console.log(resp)
 	res.json(resp)
 })
 
@@ -54,9 +55,9 @@ router.post('/disable/:userID', guard.check('user:write'), async (req: Request, 
 		if(!user) {
 			throw new Error('user not found')
 		}
-		let newUser = await user.update({
-			disabled: true
-		})
+		let oldUser = await user.toJson()
+		oldUser['disabled'] = true
+		let newUser = await user.update(oldUser)
 		res.json(await newUser.toJson())
 	} catch (err) {
 		return res.status(400).json({
@@ -72,9 +73,9 @@ router.post('/enable/:userID', guard.check('user:write'), async (req: Request, r
 		if(!user) {
 			throw new Error('user not found')
 		}
-		let newUser = await user.update({
-			disabled: false
-		})
+		let oldUser = await user.toJson()
+		oldUser['disabled'] = false
+		let newUser = await user.update(oldUser)
 		res.json(await newUser.toJson())
 	} catch (err) {
 		return res.status(400).json({

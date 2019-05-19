@@ -15,6 +15,10 @@ export default class User {
             type: 'string',
             required: true
         },
+        password: {
+            type: 'string',
+            required: true
+        },
         disabled: 'boolean'
     }
 
