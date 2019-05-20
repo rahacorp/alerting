@@ -62,6 +62,13 @@ router.get('/', guard.check('user:read'), async (req: Request, res: Response) =>
 	let resp = []
 	for(let index = 0; index < users.length; index++) {
 		let user = await users.get(index).toJson()
+		if(!user['disabled']) {
+			user.disabled = false
+
+			instacne.findById('User', user._id).then((u) => {
+				u.update(user)
+			})
+		}
 		delete user['password'] 
 		resp.push(user)
 	}
