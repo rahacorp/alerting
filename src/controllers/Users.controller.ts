@@ -56,6 +56,8 @@ router.get('/', guard.check('user:read'), async (req: Request, res: Response) =>
 			}
 		}
 	}
+	let count = await instacne.cypher('MATCH (n:User) RETURN count(n) as cnt', {})
+	count = count.records[0].get('cnt').toInt()
 	let users = await instacne.all('User', {}, [], limit, skip)
 	let resp = []
 	for(let index = 0; index < users.length; index++) {
@@ -63,7 +65,10 @@ router.get('/', guard.check('user:read'), async (req: Request, res: Response) =>
 		delete user['password'] 
 		resp.push(user)
 	}
-	res.json(resp)
+	res.json({
+		total: count,
+		hits: resp
+	})
 })
 
 router.post('/disable/:userID', guard.check('user:write'), async (req: Request, res: Response) => {
