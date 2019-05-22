@@ -17,11 +17,11 @@ router.get('/riskyUsers', guard.check('aduser:read'), async (req: Request, res: 
 			"RETURN n.logonName, avg(ru.severity) as importance, count(*) as cnt order by importance, cnt desc LIMIT 10",
 		);
 		let users = []
-		for (let computer of result.records) {
+		for (let user of result.records) {
 			users.push({
-				label: computer._fields[0],
-				importance: computer._fields[1],
-				alertCount: computer._fields[2].toInt(),
+				label: user._fields[0],
+				importance: user._fields[1],
+				alertCount: user._fields[2].toInt(),
 			})
 		}
 		res.json({
@@ -63,6 +63,34 @@ router.get('/riskyComputers', guard.check('adcomputer:read'), async (req: Reques
 		});
 	}
 })
+
+router.get('/topOS', guard.check('adcomputer:read'), async (req: Request, res: Response) => {
+	try {
+		let session = ClientFactory.createClient("neo4j_session");
+		let result = await session.run(
+			"MATCH (n:ADComputer) WITH count(*) as c MATCH (n:ADComputer) " +
+			"RETURN n.operatingSystem as os, 100.0 * count(n.operatingSystem)/c as percent limit 5",
+		);
+		let oses = []
+		for (let os of result.records) {
+			oses.push({
+				label: os._fields[0],
+				percent: os._fields[1],
+				alertCount: os._fields[2].toInt(),
+			})
+		}
+		res.json({
+			success: true,
+			computers: oses
+		})
+	} catch (err) {
+		res.status(400).json({
+			success: false,
+			message: err.message
+		});
+	}
+})
+
 
 router.get('/latestLogs', guard.check('log:read'), async (req: Request, res: Response) => {
 	try {

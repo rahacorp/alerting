@@ -241,7 +241,7 @@ router.get('/:alertId', guard.check('alert:read'), (req: Request, res: Response)
 			});
 })
 
-router.post('/:alertId/assign', guard.check('alert:assign'), async (req: Request, res: Response) => {
+router.post('/:alertId/assign', guard.check('alert:assign'), async (req: any, res: Response) => {
 	if(!req.body.username) {
 		return res.status(400).json({
 			success: false,
@@ -275,7 +275,7 @@ router.post('/:alertId/assign', guard.check('alert:assign'), async (req: Request
 	
 })
 
-router.post('/:alertId/unassign', guard.check('alert:unassign'), async (req: Request, res: Response) => {
+router.post('/:alertId/unassign', guard.check('alert:unassign'), async (req: any, res: Response) => {
 	if(!req.body.username) {
 		return res.status(400).json({
 			success: false,
@@ -308,7 +308,7 @@ router.post('/:alertId/unassign', guard.check('alert:unassign'), async (req: Req
 	}
 })
 
-router.post('/:alertId/setState', guard.check('alert:write'), async (req: Request, res: Response) => {
+router.post('/:alertId/setState', guard.check('alert:write'), async (req: any, res: Response) => {
 	if(!req.body.state) {
 		return res.status(400).json({
 			success: false,
