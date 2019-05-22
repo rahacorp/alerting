@@ -3,3 +3,4 @@ export * from './Api.controller';
 export * from './Auth.controller';
 export * from './Stats.controller';
 export * from './Users.controller';
+export * from './Alerts.controller';

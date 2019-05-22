@@ -155,6 +155,30 @@ router.delete('/:userID', guard.check('user:delete'), async (req: Request, res: 
 	
 })
 
+router.get('/:userID', guard.check('user:read'), async (req: Request, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let user = await instacne.findById('User', req.params.userID)
+		if(!user) {
+			user = await instacne.find('User', req.params.userID)
+			if(!user) {
+				return res.status(404).json({
+					message: 'user not found'
+				});
+			}
+		}
+		let userObj = await user.toJson()
+		console.log(userObj)
+		delete userObj['password']
+		res.json(userObj)
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+	
+})
+
 router.put('/newUser', guard.check('user:create'), async (req: Request, res: Response) => {
 	try {
 		console.log(req.body)
