@@ -188,6 +188,7 @@ router.get('/recentAgents', guard.check('log:read'), async (req: Request, res: R
 	}
 })
 
+
 router.get('/counts', guard.check(['log:read', 'alert:read', 'process:read', 'adcomputer:read', 'aduser:read']), async function (req: Request, res: Response) {
 	try {
 		let elasticClient = ClientFactory.createClient('elastic')
