@@ -255,7 +255,7 @@ router.post('/:alertId/assign', guard.check('alert:assign'), async (req: any, re
 			{ username: req.body.username, alertId: neo4j.int(req.params.alertId) }
 		);
 		if (assign.summary.counters._stats.relationshipsCreated == 1) {
-            await addComment(req.params.alertId, req.user.username, req.body.username, 'unassign')
+            await addComment(req.params.alertId, req.user.username, req.body.username, 'assign')
 			res.json({
 				success: true,
 				message: 'assign relation created successfully'
@@ -290,7 +290,7 @@ router.post('/:alertId/unassign', guard.check('alert:unassign'), async (req: any
 		);
 		// console.log(assign.summary.counters._stats)
 		if (assign.summary.counters._stats.relationshipsDeleted == 1) {
-            await addComment(req.params.alertId, req.user.username, req.body.username, 'assign')
+            await addComment(req.params.alertId, req.user.username, req.body.username, 'unassign')
 			res.json({
 				success: true,
 				message: 'assign relation deleted successfully'
