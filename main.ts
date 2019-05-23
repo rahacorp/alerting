@@ -9,7 +9,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import jwt from "express-jwt";
 
-import { ApiController, AuthController, StatsController, UserController, AlertsController } from "./src/controllers/Controllers";
+import { ApiController, AuthController, StatsController, UserController, AlertsController, EnvironmentController, LogsController } from "./src/controllers/Controllers";
 
 const app: express.Application = express();
 const port: number = parseInt(process.env.PORT) || 8080;
@@ -351,14 +351,17 @@ if (process.argv.length < 3) {
 	// app.use(.unless({ path: ["/auth"] }));
 	// app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
 	// app.use("/auth", jwt({ secret: "shhhhhhared-secret" }), AuthController);
-	app.use(jwt({ secret: 'shhhhhhared-secret'}).unless({path: ['/auth/login', '/auth/register']}));
+	app.use(jwt({ secret: 'shhhhhhared-secret'}).unless({path: ['/api/v1/auth/login', '/api/v1/auth/register']}));
 
-	app.use("/api", ApiController);
+	// app.use("/api", ApiController);
 
-	app.use("/auth", AuthController);
-	app.use("/stats", StatsController);
-	app.use("/users", UserController);
-	app.use("/alerts", AlertsController);
+	app.use("/api/v1/auth", AuthController);
+	app.use("/api/v1/stats", StatsController);
+	app.use("/api/v1/users", UserController);
+	app.use("/api/v1/alerts", AlertsController);
+	app.use("/api/v1/environment", EnvironmentController);
+	app.use("/api/v1/logs", LogsController);
+	
 	app.listen(port, () => {
 		console.log(`Listening at http://localhost:${port}/`);
 		// Startup.runAllRulesPriodically();

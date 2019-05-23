@@ -76,7 +76,7 @@ router.get('/', guard.check('user:read'), async (req: Request, res: Response) =>
 	})
 })
 
-router.post('/disable/:userID', guard.check('user:write'), async (req: Request, res: Response) => {
+router.post('/:userID/disable', guard.check('user:write'), async (req: Request, res: Response) => {
 	
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
@@ -95,7 +95,7 @@ router.post('/disable/:userID', guard.check('user:write'), async (req: Request, 
 	}
 })
 
-router.post('/enable/:userID', guard.check('user:write'), async (req: Request, res: Response) => {
+router.post('/:userID/enable', guard.check('user:write'), async (req: Request, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
 		let user = await instacne.findById('User', req.params.userID)
@@ -113,7 +113,7 @@ router.post('/enable/:userID', guard.check('user:write'), async (req: Request, r
 	}
 })
 
-router.post('/update/:userID', guard.check('user:write'), async (req: Request, res: Response) => {
+router.put('/:userID/update', guard.check('user:write'), async (req: Request, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
 		let user = await instacne.findById('User', req.params.userID)
@@ -155,6 +155,22 @@ router.delete('/:userID', guard.check('user:delete'), async (req: Request, res: 
 	
 })
 
+router.get('/self', guard.check('user:self'), async (req: any, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		console.log(req.user.username)
+		let user = await instacne.model('User').find(req.user.username)
+		if(!user) {
+			throw new Error(' user not found')
+		}
+		res.json(await user.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+})
+
 router.get('/:userID', guard.check('user:read'), async (req: Request, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
@@ -179,10 +195,13 @@ router.get('/:userID', guard.check('user:read'), async (req: Request, res: Respo
 	
 })
 
-router.put('/newUser', guard.check('user:create'), async (req: Request, res: Response) => {
+router.post('/newUser', guard.check('user:create'), async (req: Request, res: Response) => {
 	try {
 		console.log(req.body)
 		let instacne = ClientFactory.createClient("neode") as Neode;
+		if(req.body.password) {
+			req.body.password = getHashedPassword(req.body.password)
+		}
 		let user = await instacne.create('User', req.body)
 		if(!user) {
 			throw new Error('user not found')
@@ -195,20 +214,7 @@ router.put('/newUser', guard.check('user:create'), async (req: Request, res: Res
 	}
 })
 
-router.get('/self', guard.check('user:self'), async (req: any, res: Response) => {
-	try {
-		let instacne = ClientFactory.createClient("neode") as Neode;
-		let user = await instacne.model('User').find(req.user.username)
-		if(!user) {
-			throw new Error('user not found')
-		}
-		res.json(await user.toJson())
-	} catch (err) {
-		return res.status(400).json({
-			message: err.message
-		});
-	}
-})
+
 
 router.post("/register", guard.check('user:create'), (req: Request, res: Response) => {
 	console.log(req.body);

@@ -113,15 +113,14 @@ function children(main, parentID) {
 	return resp
 }
 
-router.get('/process', guard.check('process:read'), (req: Request, res: Response) => {
-	console.log(req.query)
+router.get('/process/:guid', guard.check('process:read'), (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")
 	session
 		.run('MATCH (p:Process {ProcessGuid: {guid}})' +
 			'OPTIONAL MATCH (p)-[r:CHILD_OF]->(parent:Process)' +
 			'OPTIONAL MATCH (child:Process)-[r2:CHILD_OF]->(p)' +
 			'RETURN p.ProcessGuid, p.CommandLine, child.ProcessGuid, child.CommandLine, parent.ProcessGuid, parent.CommandLine, ID(p), ID(child), ID(parent)', {
-				guid: req.query.guid
+				guid: '{' + req.params.guid + '}'
 			})
 		.then((result) => {
 
@@ -207,15 +206,14 @@ router.get('/process', guard.check('process:read'), (req: Request, res: Response
 		});
 });
 
-
-router.get('/computer', guard.check('adcomputer:read'), (req: Request, res: Response) => {
+router.get('/computers/:sid', guard.check('adcomputer:read'), (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")
 	session
 		.run('MATCH (n:ADComputer {objectSid: {sid} }) RETURN n', {
-			sid: req.query.sid
+			sid: req.params.sid
 		})
 		.then((result) => {
-			console.log(req.query.sid)
+			console.log(req.params.sid)
 			console.log(result)
 			if (result.records.length == 1) {
 				res.send(result.records[0]._fields[0].properties);
@@ -244,14 +242,14 @@ router.get('/computers', guard.check('adcomputer:read'), (req: Request, res: Res
 		});
 });
 
-router.get('/user', guard.check('aduser:read'), (req: Request, res: Response) => {
+router.get('/users/:sid', guard.check('aduser:read'), (req: Request, res: Response) => {
 	const session = ClientFactory.createClient("neo4j_session")
 	session
 		.run('MATCH (n:ADUser {objectSid: {sid} }) RETURN n', {
-			sid: req.query.sid
+			sid: req.params.sid
 		})
 		.then((result) => {
-			console.log(req.query.sid)
+			console.log(req.params.sid)
 			console.log(result)
 			if (result.records.length == 1) {
 				res.send(result.records[0]._fields[0].properties);
@@ -280,82 +278,6 @@ router.get('/users', guard.check('aduser:read'), (req: Request, res: Response) =
 		});
 });
 
-
-router.get('/logs', guard.check('log:read'), async function (req: Request, res: Response) {
-	let elasticClient = ClientFactory.createClient('elastic')
-	let limit = 50
-	let skip = 0
-	if(req.query.limit) {
-		if(Number(req.query.limit)) {
-			limit = Number(req.query.limit)
-			if(limit > 500 || limit < 0) {
-				limit = 500
-			}
-		}
-	}
-
-	if(req.query.skip) {
-		if(Number(req.query.skip)) {
-			skip = Number(req.query.skip)
-			if(skip < 0) {
-				skip = 0
-			}
-		}
-	}
-	if(skip + limit > 10000) {
-		return res.status(400).json({
-			message: 'skip + limit must be less than 10000 (elasticsearch limits)'
-		})
-	}
-	const response = await elasticClient.search({
-		index: 'winlogbeat-*',
-		size: limit,
-		from: skip,
-		body: {
-			query: {
-				query_string: {
-					query: req.query.q
-				}
-			}
-		}
-	})
-	// console.log(response.hits.hits)
-	res.json({
-		total: response.hits.total,
-		hits: response.hits.hits
-	})
-})
-
-router.get('/suggest', async function (req: Request, res: Response) {
-    let elasticClient = ClientFactory.createClient('elastic')
-	// req.query.field
-	// req.query.prefix
-	let body = {
-		"query": {
-			"prefix": {
-
-			}
-		},
-		"aggs": {
-			"tagg": {
-				"terms": {
-					"field": req.query.field + ".keyword",
-					"size": 10
-				}
-			}
-		}
-	}
-	body.query.prefix[req.query.field + ".keyword"] = req.query.prefix
-	console.log(body)
-	const response = await elasticClient.search({
-		index: 'winlogbeat-*',
-		size: 0,
-		body: body
-	})
-	console.log(response)
-	res.send(response.aggregations.tagg.buckets)
-})
-
 router.get('/searchObjects', guard.check(['aduser:read', 'adcomputer:read']), async (req: Request, res: Response) => {
 	if(!req.query.q) {
 		return res.status(400).json({
@@ -381,4 +303,4 @@ router.get('/searchObjects', guard.check(['aduser:read', 'adcomputer:read']), as
 	res.json(response)
 })
 // Export the express.Router() instance to be used by server.ts
-export const ApiController: Router = router;
+export const EnvironmentController: Router = router;
