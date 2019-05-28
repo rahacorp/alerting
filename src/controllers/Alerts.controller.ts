@@ -87,7 +87,7 @@ router.get('/relatedToComputer/:sid', guard.check('alert:read'), async (req: Req
 		let countBuilder = instacne.query()
 		countBuilder
 			.match('alert', instacne.model('Alert'))
-			.relationship('RELATED_TO', 'out', 'rel')
+			.relationship('RELATED_TO', 'out', 'rel', 1)
 			.to('computer', instacne.model('ADComputer'))
 			.where('computer.objectSid', req.params.sid)
 			.return('count(alert)')
@@ -100,7 +100,7 @@ router.get('/relatedToComputer/:sid', guard.check('alert:read'), async (req: Req
 		let builder = instacne.query()
 		builder
 			.match('alert', instacne.model('Alert'))
-			.relationship('RELATED_TO', 'out', 'rel')
+			.relationship('RELATED_TO', 'out', 'rel', 1)
 			.to('computer', instacne.model('ADComputer'))
 			.where('computer.objectSid', req.params.sid)
 			.return(eagerNode(instacne, 1, 'alert', instacne.model('Alert')))
@@ -128,7 +128,7 @@ router.get('/relatedToUser/:sid', guard.check('alert:read'), async (req: Request
 		let countBuilder = instacne.query()
 		countBuilder
 			.match('alert', instacne.model('Alert'))
-			.relationship('RELATED_TO', 'out', 'rel')
+			.relationship('RELATED_TO', 'out', 'rel', 1)
 			.to('user', instacne.model('ADUser'))
 			.where('user.objectSid', req.params.sid)
 			.return('count(alert)')
@@ -141,7 +141,7 @@ router.get('/relatedToUser/:sid', guard.check('alert:read'), async (req: Request
 		let builder = instacne.query()
 		builder
 			.match('alert', instacne.model('Alert'))
-			.relationship('RELATED_TO', 'out', 'rel')
+			.relationship('RELATED_TO', 'out', 'rel', 1)
 			.to('user', instacne.model('ADUser'))
 			.where('user.objectSid', req.params.sid)
 			.return(eagerNode(instacne, 1, 'alert', instacne.model('Alert')))
@@ -169,7 +169,7 @@ router.get('/assignedToUser/:username', guard.check('alert:read'), async (req: R
 		let countBuilder = instacne.query()
 		countBuilder
 			.match('alert', instacne.model('Alert'))
-			.relationship('ASSIGNED_TO', 'out', 'rel')
+			.relationship('ASSIGNED_TO', 'out', 'rel', 1)
 			.to('user', instacne.model('User'))
 			.where('user.username', req.params.username)
 			.return('count(alert)')
@@ -182,7 +182,7 @@ router.get('/assignedToUser/:username', guard.check('alert:read'), async (req: R
 		let builder = instacne.query()
 		builder
 			.match('alert', instacne.model('Alert'))
-			.relationship('ASSIGNED_TO', 'out', 'rel')
+			.relationship('ASSIGNED_TO', 'out', 'rel', 1)
 			.to('user', instacne.model('User'))
 			.where('user.username', req.params.username)
 			.return(eagerNode(instacne, 1, 'alert', instacne.model('Alert')))
@@ -258,7 +258,7 @@ router.post('/:alertId/unassign', guard.check('alert:unassign'), async (req: any
 		let builder = instacne.query()
 		builder
 			.match('alert', instacne.model('Alert'))
-			.relationship('ASSIGNED_TO', 'out', 'rel')
+			.relationship('ASSIGNED_TO', 'out', 'rel', 1)
 			.to('user', instacne.model('User'))
 			.whereId('alert', req.params.alertId)
 			.where('user.username', req.user.username)
@@ -377,7 +377,7 @@ router.get('/:alertId/comment', guard.check('alert:read'), async (req: any, res:
 		let countBuilder = instacne.query()
 		countBuilder
 			.match('alert', instacne.model('Alert'))
-			.relationship('COMMENT', 'out', 'rel')
+			.relationship('COMMENT', 'out', 'rel', 1)
 			.to('comment', instacne.model('Comment'))
 			.whereId('alert', req.params.alertId)
 			.return('count(comment)')
@@ -390,7 +390,7 @@ router.get('/:alertId/comment', guard.check('alert:read'), async (req: any, res:
 		let builder = instacne.query()
 		builder
 			.match('alert', instacne.model('Alert'))
-			.relationship('COMMENT', 'out', 'rel')
+			.relationship('COMMENT', 'out', 'rel', 1)
 			.to('comment', instacne.model('Comment'))
 			.whereId('alert', req.params.alertId)
 			.return(eagerNode(instacne, 1, 'comment', instacne.model('Comment')))

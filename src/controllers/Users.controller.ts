@@ -184,7 +184,7 @@ router.get('/notifications', guard.check('user:read'), async (req: Request, res:
 		let countBuilder = instacne.query()
 		countBuilder
 			.match('user', instacne.model('User'))
-			.relationship('HAS_NOTIFICATION', 'out', 'rel')
+			.relationship('HAS_NOTIFICATION', 'out', 'rel', 1)
 			.to('notif', instacne.model('Notification'))
 			.where('user.username', req.user.username)
 			.return('count(notif)')
@@ -195,7 +195,7 @@ router.get('/notifications', guard.check('user:read'), async (req: Request, res:
 		let builder = instacne.query()
 		builder
 			.match('user', instacne.model('User'))
-			.relationship('HAS_NOTIFICATION', 'out', 'rel')
+			.relationship('HAS_NOTIFICATION', 'out', 'rel', 1)
 			.to('notif', instacne.model('Notification'))
 			.where('user.username', req.user.username)
 			.return(eagerNode(instacne, 1, 'notif', instacne.model('Notification')))
@@ -227,7 +227,7 @@ router.get('/notifications/:notifId', guard.check('user:read'), async (req: Requ
 		let builder = instacne.query()
 		builder
 			.match('user', instacne.model('User'))
-			.relationship('HAS_NOTIFICATION', 'out', 'rel')
+			.relationship('HAS_NOTIFICATION', 'out', 'rel', 1)
 			.to('notif', instacne.model('Notification'))
 			.where('user.username', req.user.username)
 			.whereId('notif', req.params.notifId)

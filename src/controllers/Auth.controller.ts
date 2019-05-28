@@ -147,12 +147,6 @@ router.post("/login", async (req: Request, res: Response) => {
 	}
 });
 
-router.get('/self', guard.check('user:self'), (req: any, res: Response) => {
-	let resp = JSON.parse(JSON.stringify(req.user))
-	resp.role = resp.permissions[0]
-	res.send(resp)
-})
-
 router.post("/resetPassword", guard.check('user:reset_password'), async (req: Request, res: Response) => {
 	let username = req.body.username;
 	let password = req.body.password;
