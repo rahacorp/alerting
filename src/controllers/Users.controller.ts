@@ -105,6 +105,8 @@ router.post('/:userID/enable', guard.check('user:write'), async (req: Request, r
 			throw new Error('user not found')
 		}
 		let oldUser = await user.toJson()
+		delete oldUser['_id']
+		delete oldUser['_labels']
 		oldUser['disabled'] = false
 		let newUser = await user.update(oldUser)
 		res.json(await newUser.toJson())
