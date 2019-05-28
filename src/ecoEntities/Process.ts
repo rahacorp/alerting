@@ -13,8 +13,8 @@ export default class Process {
         operatingSystemVersion: 'string',
         processId: 'number',
         terminalSessionId: 'number',
-        utcTime: 'DateTime',
-        startTime: 'DateTime',
-        endTime: 'DateTime',
+        utcTime: 'datetime',
+        startTime: 'datetime',
+        endTime: 'datetime',
     }
 }

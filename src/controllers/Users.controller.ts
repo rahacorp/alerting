@@ -3,6 +3,8 @@ import { ClientFactory } from "../clientFactory/ClientFactory";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import Neode from "neode"
+import {eagerNode} from 'neode/build/Query/EagerUtils';
+
 
 import expressPerm from "express-jwt-permissions";
 import { Object } from "es6-shim";
@@ -155,6 +157,96 @@ router.delete('/:userID', guard.check('user:delete'), async (req: Request, res: 
 	
 })
 
+
+router.get('/notifications', guard.check('user:read'), async (req: Request, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+        let limit : number = 20
+		let skip : number = 0
+		if(req.query.limit) {
+			if(Number(req.query.limit)) {
+				limit = Number(req.query.limit)
+				if(limit > 20 || limit < 0) {
+					limit = 20
+				}
+			}
+		}
+		if(req.query.skip) {
+			if(Number(req.query.skip)) {
+				skip = Number(req.query.skip)
+				if(skip < 0) {
+					skip = 0
+				}
+			}
+		}
+		let countBuilder = instacne.query()
+		countBuilder
+			.match('user', instacne.model('User'))
+			.relationship('HAS_NOTIFICATION', 'out', 'rel')
+			.to('notif', instacne.model('Notification'))
+			.where('user.username', req.user.username)
+			.return('count(notif)')
+			.build()
+			
+		let count = await countBuilder.execute()
+		let notifCount = count.records[0].get('count(notif)').toInt()
+		let builder = instacne.query()
+		builder
+			.match('user', instacne.model('User'))
+			.relationship('HAS_NOTIFICATION', 'out', 'rel')
+			.to('notif', instacne.model('Notification'))
+			.where('user.username', req.user.username)
+			.return(eagerNode(instacne, 1, 'notif', instacne.model('Notification')))
+			.orderBy('notif.read', 'ASC')
+			.orderBy('notif.created_at', 'DESC')
+			.skip(skip).limit(limit)
+			.build()
+			
+		let assign = await builder.execute()
+		// console.log(assign)
+		let notifs = instacne.hydrate(assign, 'notif', instacne.model('Notification'))
+		// console.log(notifs)
+		res.json({
+			total: notifCount,
+			hits: await notifs.toJson()
+		})
+		// let alert = instacne.hydrateFirst(resp, 'alert', instacne.model('Alert'))
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}	
+})
+
+
+router.get('/notifications/:notifId', guard.check('user:read'), async (req: Request, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let builder = instacne.query()
+		builder
+			.match('user', instacne.model('User'))
+			.relationship('HAS_NOTIFICATION', 'out', 'rel')
+			.to('notif', instacne.model('Notification'))
+			.where('user.username', req.user.username)
+			.whereId('notif', req.params.notifId)
+			.return(eagerNode(instacne, 1, 'notif', instacne.model('Notification')))
+			.build()
+			
+		let assign = await builder.execute()
+		let notif = instacne.hydrateFirst(assign, 'notif', instacne.model('Notification'))
+		notif.update({
+			read: true,
+			text: notif.get('text'),
+			created_at: notif.get('created_at')
+		})
+		res.json(await notif.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}	
+})
+
 router.get('/self', guard.check('user:self'), async (req: any, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
@@ -184,8 +276,6 @@ router.get('/:userID', guard.check('user:read'), async (req: Request, res: Respo
 			}
 		}
 		let userObj = await user.toJson()
-		console.log(userObj)
-		delete userObj['password']
 		res.json(userObj)
 	} catch (err) {
 		return res.status(400).json({
@@ -194,6 +284,7 @@ router.get('/:userID', guard.check('user:read'), async (req: Request, res: Respo
 	}
 	
 })
+
 
 router.post('/newUser', guard.check('user:create'), async (req: Request, res: Response) => {
 	try {
@@ -210,160 +301,6 @@ router.post('/newUser', guard.check('user:create'), async (req: Request, res: Re
 	} catch (err) {
 		return res.status(400).json({
 			message: err.message
-		});
-	}
-})
-
-
-
-router.post("/register", guard.check('user:create'), (req: Request, res: Response) => {
-	console.log(req.body);
-	if (!req.body.username) {
-		return res.status(400).json({
-			success: false,
-			message: 'please provide "username"'
-		});
-	}
-	if (!req.body.password) {
-		return res.status(400).json({
-			success: false,
-			message: 'please provide "password"'
-		});
-	}
-	if (!req.body.role) {
-		return res.status(400).json({
-			success: false,
-			message: 'please provide "role"'
-		});
-	} else if (["admin", "viewer", "responder"].indexOf(req.body.role) == -1) {
-		return res.status(400).json({
-			success: false,
-			message: "role is one of : [admin, viewer, responder]"
-		});
-	}
-	let session = ClientFactory.createClient("neo4j_session");
-	let q =
-		"MERGE (user:User {username : {username} }) ON CREATE SET user.username = {username}, user.password = {password}, user.role = {role}";
-	session
-		.run(q, {
-			username: req.body.username,
-			password: getHashedPassword(req.body.password),
-			role: req.body.role
-		})
-		.then(result => {
-			console.log(result.summary);
-			if (result.summary.counters._stats.nodesCreated == 1) {
-				return res.json({
-					success: true,
-					message: "account created successfully",
-					user: {
-						username: req.body.username,
-						password: getHashedPassword(req.body.password),
-						role: req.body.role
-					}
-				});
-			} else {
-				return res.status(400).json({
-					success: false,
-					message: "account already exists"
-				});
-			}
-		})
-		.catch(error => {
-			console.log(error);
-			res.status(500).json({
-				success: false,
-				message: error.message
-			});
-		});
-});
-
-router.post("/login", async (req: Request, res: Response) => {
-	console.log(req.body);
-	// res.send("ok" + req.body);
-	let username = req.body.username;
-	let password = req.body.password;
-
-	if (username && password) {
-		try {
-			let session = ClientFactory.createClient("neo4j_session");
-			let users = await session.run(
-				"MATCH (u:User) WHERE u.username = {username} AND u.password = {password} RETURN u.role as role",
-				{ username: username, password: getHashedPassword(password) }
-			);
-			// console.log(users.records);
-			if (users.records.length == 1) {
-				let record = users.records[0];
-				let payload = {
-					username: username,
-					permissions: getPermissionsByRole(record.get("role"))
-				};
-				console.log(payload);
-				let token = jwt.sign(payload, "shhhhhhared-secret", {
-					expiresIn: "24h" // expires in 24 hours
-				});
-				// return the JWT token for the future API calls
-				res.json({
-					success: true,
-					message: "Authentication successful!",
-					token: token,
-					roles: [record.get("role")],
-					permissions: payload.permissions
-				});
-			} else {
-				res.status(403).json({
-					success: false,
-					message: "Incorrect username or password"
-				});
-			}
-		} catch (err) {
-			res.status(400).json({
-				success: false,
-				message: err.message
-			});
-		}
-	} else {
-		res.status(400).json({
-			success: false,
-			message: "Authentication failed! Please check the request"
-		});
-	}
-});
-
-
-
-router.post("/resetPassword", guard.check('user:reset_password'), async (req: Request, res: Response) => {
-	let username = req.body.username;
-	let password = req.body.password;
-
-	if (username && password) {
-		try {
-			let session = ClientFactory.createClient("neo4j_session");
-			let users = await session.run(
-				"MATCH (u:User) WHERE u.username = {username} SET u.password = {password}",
-				{ username: username, password: getHashedPassword(password) }
-			);
-			if (users.summary.counters._stats.propertiesSet == 1) {
-				res.json({
-					success: true,
-					message: "password reset success",
-				})
-			} else {
-				res.status(404).json({
-					success: false,
-					message: 'user not  found'
-				})
-			}
-		} catch (err) {
-			res.status(400).json({
-				success: false,
-				message: err.message
-			});
-		}
-	} else {
-		res.status(400).json({
-			success: false,
-			message: "Please provide 'username' and 'password' parameters"
 		});
 	}
 })

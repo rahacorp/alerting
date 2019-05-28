@@ -69,16 +69,23 @@ router.get('/topOS', guard.check('adcomputer:read'), async (req: Request, res: R
 		let session = ClientFactory.createClient("neo4j_session");
 		let result = await session.run(
 			"MATCH (n:ADComputer) WITH count(*) as c MATCH (n:ADComputer) " +
-			"RETURN n.operatingSystem as os, 100.0 * count(n.operatingSystem)/c as percent limit 5",
+			"RETURN n.operatingSystem as os, 100.0 * count(n.operatingSystem)/c as percent order by percent desc limit 5",
 		);
 		let oses = []
+		let remaining = 100.00
 		for (let os of result.records) {
 			oses.push({
 				label: os._fields[0],
 				percent: os._fields[1],
-				alertCount: os._fields[2].toInt(),
 			})
+			remaining -= os._fields[1]
 		}
+		if(remaining > 1.0) {
+			oses.push({
+				label: 'other',
+				percent: remaining
+			})
+		} 
 		res.json({
 			success: true,
 			computers: oses
@@ -213,6 +220,24 @@ router.get('/counts', guard.check(['log:read', 'alert:read', 'process:read', 'ad
 		});
 	}
    
+})
+
+router.get('/health', guard.check('health:read'),async function (req: Request, res: Response) {
+	let elasticClient = ClientFactory.createClient('elastic')
+	let elasticStatus = 'red'
+	
+	try {
+		elasticStatus = await elasticClient.cat.health({
+			format: 'json'
+		})
+		console.log(elasticStatus)
+		res.json({
+			elastic: elasticStatus
+		})
+	} catch (err) {
+		elasticStatus = 'red'
+	}	
+	
 })
 
 // Export the express.Router() instance to be used by server.ts

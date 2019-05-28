@@ -19,7 +19,7 @@ function getHashedPassword(pass: string) {
 function getPermissionsByRole(role: string) {
 	let permissions = []
 	if(role === 'admin') {
-		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
+		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 'health:read',
 		'adcomputer:read', 'aduser:read', 'user:read', 'log:read', 'user:create', 'user:reset_password', 'user:write', 'user:delete']
 	} 
 	if(role === 'viewer') {

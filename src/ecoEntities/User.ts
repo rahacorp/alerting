@@ -1,4 +1,5 @@
 import Neode from 'neode'
+import { ClientFactory } from '../clientFactory/ClientFactory';
 
 export default class User {
     static model: Neode.SchemaObject = {
@@ -17,9 +18,20 @@ export default class User {
         },
         password: {
             type: 'string',
-            required: true
+            required: true,
+            hidden: true
         },
-        disabled: 'boolean'
+        disabled: 'boolean',
+
+        //relations
+        has_notification: {
+            type: 'relationship',
+            target: 'Notification',
+            direction: 'out',
+            relationship: 'HAS_NOTIFICATION',
+            properties: {},
+            eager: false
+        }
     }
 
     constructor(usrename: string) {
@@ -42,7 +54,31 @@ export default class User {
 
     }
 
+    static async notify(user: Neode.Node<{}>, text: string, alert: Neode.Node<{}>) {
+		let instacne = ClientFactory.createClient("neode") as Neode;
 
+        let notif = await instacne.create('Notification', {
+            text: text,
+            created_at: new Date(),
+            read: false
+        })
+
+        await user.relateTo(notif, 'has_notification', {})
+        await notif.relateTo(alert, 'relate_to_alert', {})
+    }
+
+    static async comment(user: Neode.Node<{}>, text: string, type: string, alert: Neode.Node<{}>) {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+
+        let comment = await instacne.create('Comment', {
+            text: text,
+            type: type,
+            created_at: new Date(),
+        })
+
+        await comment.relateTo(user, 'written_by', {})
+        await alert.relateTo(comment, 'comment', {})
+    }
 
 
 }
