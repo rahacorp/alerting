@@ -255,10 +255,11 @@ router.post('/:alertId/unassign', guard.check('alert:unassign'), async (req: any
         
 		let alert = await instacne.model('Alert').findById(req.params.alertId)
 		let user = await instacne.model('User').find(req.user.username)
+		// console.log(alert, user)
 		let builder = instacne.query()
 		builder
 			.match('alert', instacne.model('Alert'))
-			.relationship('ASSIGNED_TO', 'out', 'rel', 1)
+			.relationship('ASSIGNED_TO', 'out', 'rel', undefined)
 			.to('user', instacne.model('User'))
 			.whereId('alert', req.params.alertId)
 			.where('user.username', req.user.username)
@@ -279,6 +280,7 @@ router.post('/:alertId/unassign', guard.check('alert:unassign'), async (req: any
 		}
 		// let alert = instacne.hydrateFirst(resp, 'alert', instacne.model('Alert'))
 	} catch (err) {
+		console.log(err)
 		return res.status(400).json({
 			message: err.message
 		});

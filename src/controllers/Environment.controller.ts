@@ -209,29 +209,20 @@ router.get('/computers/:sid/info', guard.check('aduser:read'), async (req: Reque
         })
     }
     //alert severity
-    instacne.cypher(
+    let respSeverity = await instacne.cypher(
         'MATCH\n' +
-		'(alert:Alert)<-[has_rule:`TRIGGERED`*1]-(rule:Rule)-[rel:`RELATED_TO`*1]->(computer:ADComputer)\n' +
+		'(rule:Rule)-[has_rule:`TRIGGERED`*1]->(alert:Alert)-[rel:`RELATED_TO`*1]->(computer:ADComputer)\n' +
 		'WHERE (computer.objectSid = {where_computer_objectSid}) \n' +
 		'RETURN\n' +
 		'rule.severity,count(*)\n',
-        {}
+        {
+			where_computer_objectSid: req.params.sid
+		}
     )
-    let builderSeverity = instacne.query()
-    builderSeverity
-        .match('alert', instacne.model('Alert'))
-        .relationship('TRIGGERED', 'in', 'has_rule', 1)
-        .to('rule', instacne.model('Rule'))
-        .relationship('RELATED_TO', 'out', 'rel', 1)
-        .to('computer', instacne.model('ADComputer'))
-        .where('computer.objectSid', req.params.sid)
-        .return('rule.severity', 'count(*)')
-        .build()
-    let respSeverity = await builderSeverity.execute()
     console.log(respSeverity)
     for (let state of respSeverity.records) {
         response.alertSeverities.push({
-            state: state.get('rule.severity'),
+            state: state.get('rule.severity').toInt(),
             count: state.get('count(*)').toInt(),
         })
     }
