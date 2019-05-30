@@ -109,7 +109,7 @@ router.get('/latestLogs', guard.check('log:read'), async (req: Request, res: Res
 			"query": {
 			  "range": {
 				  "@timestamp": {
-					  "gte": "now-30h"
+					  "gte": "now-30h/h"
 				  }
 			  }
 		  },
@@ -120,8 +120,8 @@ router.get('/latestLogs', guard.check('log:read'), async (req: Request, res: Res
 						  "min_doc_count" : 0,
 						  "interval": "1h",
 						  "extended_bounds" : {
-							"min" : "now-30h",
-							"max" : "now"
+							"min" : "now-30h/h",
+							"max" : "now/h"
 						  }
 					  }
 				  }
@@ -154,7 +154,7 @@ router.get('/recentAgents', guard.check('log:read'), async (req: Request, res: R
 			"query": {
 			  "range": {
 				  "@timestamp": {
-					  "gte": "now-10d"
+					  "gte": "now-10d/d"
 				  }
 			  }
 		  },
@@ -165,8 +165,8 @@ router.get('/recentAgents', guard.check('log:read'), async (req: Request, res: R
 						  "min_doc_count" : 0,
 						  "interval": "1d",
 						  "extended_bounds" : {
-							"min" : "now-10d",
-							"max" : "now"
+							"min" : "now-10d/d",
+							"max" : "now/d"
 						  }
 					  },
 					  "aggs" : {
@@ -222,21 +222,8 @@ router.get('/counts', guard.check(['log:read', 'alert:read', 'process:read', 'ad
    
 })
 
-router.get('/health', guard.check('health:read'),async function (req: Request, res: Response) {
-	let elasticClient = ClientFactory.createClient('elastic')
-	let elasticStatus = 'red'
-	
-	try {
-		elasticStatus = await elasticClient.cat.health({
-			format: 'json'
-		})
-		console.log(elasticStatus)
-		res.json({
-			elastic: elasticStatus
-		})
-	} catch (err) {
-		elasticStatus = 'red'
-	}	
+router.get('/health', guard.check('health:read'), async function (req: Request, res: Response) {
+	res.json(ClientFactory.health)
 	
 })
 

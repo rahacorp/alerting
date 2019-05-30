@@ -1,7 +1,9 @@
 import * as elastic from 'elasticsearch'
 import * as ActiveDirectory from 'activedirectory2'
 import Neode, { RelationshipType } from 'neode'
+import Startup from '../../main'
 import {v1 as neo4j} from 'neo4j-driver'
+import {Client as restClient} from 'node-rest-client'
 import config from '../../config.json'
 import ADComputer from '../ecoEntities/ADComputer'
 import ADDomain from '../ecoEntities/ADDomain'
@@ -30,6 +32,10 @@ export class ClientFactory {
                 return client
             } else if (type === 'ldap') {
                 let client = ActiveDirectory.default(config.activeDirectory)
+                ClientFactory.clients[type] = client
+                return client
+            } else if (type === 'rest') {
+                let client = new restClient()
                 ClientFactory.clients[type] = client
                 return client
             } else if (type === 'neo4j') {
@@ -71,6 +77,104 @@ export class ClientFactory {
             } else {
                 throw new Error('client type not supported :' + type)
             }
+        }
+    }
+
+    static health = {
+        elastic: {
+            status: undefined,
+            data: undefined
+        },
+        neo4j: {
+            status: undefined,
+            data: undefined
+        },
+        logstash: {
+            status: undefined,
+            data: undefined
+        },
+        kafka_input: {
+            status: undefined,
+            data: undefined
+        },
+        elastic_output: {
+            status: undefined,
+            data: undefined
+        }
+    }
+
+    
+
+    public static async checkHealth() {
+    	const session = ClientFactory.createClient("neo4j_session")
+        let elasticClient = ClientFactory.createClient('elastic')
+        let rest = ClientFactory.createClient('rest')
+        while(true) {
+            try {
+                let elasticStatus = await elasticClient.cat.health({
+                    format: 'json'
+                })
+                ClientFactory.health.elastic.data = elasticStatus[0]
+                ClientFactory.health.elastic.status = elasticStatus[0].status
+            } catch (err) {
+                ClientFactory.health.elastic.status = 'red'
+            }	
+
+            try {
+                let status = await session.run('call dbms.showCurrentUser')
+                ClientFactory.health.neo4j.data = status.summary
+                ClientFactory.health.neo4j.status = 'green'
+            } catch (err) {
+                ClientFactory.health.neo4j.status = 'red'
+            }	
+
+            try {
+                rest.get("http://192.168.1.218:9600/_node/stats/pipelines", function (data, response) {
+                    // parsed response body as js object
+                    ClientFactory.health.logstash.data = data
+                    ClientFactory.health.logstash.status = 'green'
+                    
+                    if(ClientFactory.health.kafka_input.data) {
+                        if(ClientFactory.health.kafka_input.data.events.out < data.pipelines.main.plugins.inputs[0].events.out) {
+                            ClientFactory.health.kafka_input.status = 'green'
+                        } else {
+                            if(ClientFactory.health.kafka_input.status == 'green') {
+                                ClientFactory.health.kafka_input.status = 'yellow'
+                            } else {
+                                ClientFactory.health.kafka_input.status = 'red'
+                            }
+                        }
+                    }
+                    ClientFactory.health.kafka_input.data = data.pipelines.main.plugins.inputs[0]
+
+                    if(ClientFactory.health.elastic_output.data) {
+                        if(ClientFactory.health.elastic_output.data.events.out < data.pipelines.main.plugins.outputs[1].events.out) {
+                            ClientFactory.health.elastic_output.status = 'green'
+                        } else {
+                            if(ClientFactory.health.elastic_output.status == 'green') {
+                                ClientFactory.health.elastic_output.status = 'yellow'
+                            } else {
+                                ClientFactory.health.elastic_output.status = 'red'
+                            }
+                        }
+                    }
+                    ClientFactory.health.elastic_output.data = data.pipelines.main.plugins.outputs[1]
+
+
+
+                    // raw response
+                }).on('error', function (err) {
+                    ClientFactory.health.logstash.status = 'red'
+                    ClientFactory.health.logstash.data = err
+                    ClientFactory.health.kafka_input.status = 'red'
+                    ClientFactory.health.kafka_input.data = undefined
+                    ClientFactory.health.elastic_output.status = 'red'
+                    ClientFactory.health.elastic_output.data = undefined
+                });
+            } catch (err) {
+            }	
+            console.log('check health')
+            await Startup.sleep(60 * 1000);
         }
     }
 }

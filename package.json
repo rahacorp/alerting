@@ -52,6 +52,7 @@
     "multer": "^1.4.1",
     "neo4j-driver": "^1.7.2",
     "neode": "^0.2.15",
+    "node-rest-client": "^3.1.0",
     "pino": "^5.12.3",
     "pino-pretty": "^3.0.0",
     "react": "^16.8.0-alpha.1",

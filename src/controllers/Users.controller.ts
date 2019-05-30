@@ -61,7 +61,8 @@ router.get('/', guard.check('user:read'), async (req: Request, res: Response) =>
 	let count = await instacne.cypher('MATCH (n:User) RETURN count(n) as cnt', {})
 	count = count.records[0].get('cnt').toInt()
 	let users = await instacne.all('User', {}, [], limit, skip)
-	let resp = []
+	/*let resp = []
+
 	for(let index = 0; index < users.length; index++) {
 		let user = await users.get(index).toJson()
 		if(!user['disabled']) {
@@ -72,9 +73,10 @@ router.get('/', guard.check('user:read'), async (req: Request, res: Response) =>
 		delete user['password'] 
 		resp.push(user)
 	}
+	*/
 	res.json({
 		total: count,
-		hits: resp
+		hits: await users.toJson()
 	})
 })
 

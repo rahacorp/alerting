@@ -9,9 +9,9 @@
             "request": "launch",
             "name": "Launch Program",
             "program": "${workspaceFolder}/main.ts",
-            // "args": ["list"],
+            "args": [],
             // "args": ["run", "ir.raha.detect.bruteforce", "detect_bruteforce"],
-            "args": ["adsync"],
+            // "args": ["adsync"],
             // "args": ["add", "C:\\Users\\alireza\\Desktop\\Programming\\personal\\rules\\jsonRule"],
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
