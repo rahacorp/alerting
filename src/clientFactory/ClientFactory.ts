@@ -3,7 +3,6 @@ import * as ActiveDirectory from 'activedirectory2'
 import Neode, { RelationshipType } from 'neode'
 import Startup from '../../main'
 import {v1 as neo4j} from 'neo4j-driver'
-import {Client as restClient} from 'node-rest-client'
 import config from '../../config.json'
 import ADComputer from '../ecoEntities/ADComputer'
 import ADDomain from '../ecoEntities/ADDomain'
@@ -15,6 +14,7 @@ import Alert from '../ecoEntities/Alert'
 import Comment from '../ecoEntities/Comment'
 import Notification from '../ecoEntities/Notification'
 import Rule from '../ecoEntities/Rule'
+import LogstashClient from './LogstashClient';
 
 export class ClientFactory {
     static clients: any
@@ -34,8 +34,8 @@ export class ClientFactory {
                 let client = ActiveDirectory.default(config.activeDirectory)
                 ClientFactory.clients[type] = client
                 return client
-            } else if (type === 'rest') {
-                let client = new restClient()
+            } else if (type === 'logstash') {
+                let client = new LogstashClient(config.logstash.address)
                 ClientFactory.clients[type] = client
                 return client
             } else if (type === 'neo4j') {
@@ -108,7 +108,7 @@ export class ClientFactory {
     public static async checkHealth() {
     	const session = ClientFactory.createClient("neo4j_session")
         let elasticClient = ClientFactory.createClient('elastic')
-        let rest = ClientFactory.createClient('rest')
+        let logstash = ClientFactory.createClient('logstash') as LogstashClient
         while(true) {
             try {
                 let elasticStatus = await elasticClient.cat.health({
@@ -129,49 +129,23 @@ export class ClientFactory {
             }	
 
             try {
-                rest.get("http://192.168.1.218:9600/_node/stats/pipelines", function (data, response) {
-                    // parsed response body as js object
-                    ClientFactory.health.logstash.data = data
-                    ClientFactory.health.logstash.status = 'green'
-                    
-                    if(ClientFactory.health.kafka_input.data) {
-                        if(ClientFactory.health.kafka_input.data.events.out < data.pipelines.main.plugins.inputs[0].events.out) {
-                            ClientFactory.health.kafka_input.status = 'green'
-                        } else {
-                            if(ClientFactory.health.kafka_input.status == 'green') {
-                                ClientFactory.health.kafka_input.status = 'yellow'
-                            } else {
-                                ClientFactory.health.kafka_input.status = 'red'
-                            }
-                        }
-                    }
-                    ClientFactory.health.kafka_input.data = data.pipelines.main.plugins.inputs[0]
-
-                    if(ClientFactory.health.elastic_output.data) {
-                        if(ClientFactory.health.elastic_output.data.events.out < data.pipelines.main.plugins.outputs[1].events.out) {
-                            ClientFactory.health.elastic_output.status = 'green'
-                        } else {
-                            if(ClientFactory.health.elastic_output.status == 'green') {
-                                ClientFactory.health.elastic_output.status = 'yellow'
-                            } else {
-                                ClientFactory.health.elastic_output.status = 'red'
-                            }
-                        }
-                    }
-                    ClientFactory.health.elastic_output.data = data.pipelines.main.plugins.outputs[1]
-
-
-
-                    // raw response
-                }).on('error', function (err) {
-                    ClientFactory.health.logstash.status = 'red'
-                    ClientFactory.health.logstash.data = err
-                    ClientFactory.health.kafka_input.status = 'red'
-                    ClientFactory.health.kafka_input.data = undefined
-                    ClientFactory.health.elastic_output.status = 'red'
-                    ClientFactory.health.elastic_output.data = undefined
-                });
+                let logstashHealth = await logstash.check()
+                ClientFactory.health.logstash = logstashHealth.logstash
+                ClientFactory.health.kafka_input = logstashHealth.kafka_input
+                ClientFactory.health.elastic_output = logstashHealth.elastic_output
             } catch (err) {
+                ClientFactory.health.logstash = {
+                    status: 'red',
+                    data: undefined
+                }
+                ClientFactory.health.kafka_input = {
+                    status: 'red',
+                    data: undefined
+                }
+                ClientFactory.health.elastic_output = {
+                    status: 'red',
+                    data: undefined
+                }
             }	
             console.log('check health')
             await Startup.sleep(60 * 1000);
