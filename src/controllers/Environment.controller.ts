@@ -184,12 +184,54 @@ router.get('/users/:sid', guard.check('aduser:read'), (req: Request, res: Respon
         })
 })
 
+async function getComputer(idOrSid: any): Promise<Neode.Node<{}>> {
+    let instacne = ClientFactory.createClient('neode') as Neode
+    let computer = undefined
+    try {
+        computer = await instacne.findById('ADComputer', idOrSid)
+        if(computer) {
+            return computer
+        }
+    } catch (err) {
+        computer = undefined
+    }
+    if (!computer) {
+        return await instacne.find('ADComputer', idOrSid)
+    }
+}
+
+async function getUser(idOrSid: any): Promise<Neode.Node<{}>> {
+    let instacne = ClientFactory.createClient('neode') as Neode
+    let user = undefined
+    console.log(idOrSid)
+    try {
+        user = await instacne.findById('ADUser', idOrSid)
+        if(user) {
+            return user
+        }
+    } catch (err) {
+        user = undefined
+    }
+    if (!user) {
+        return await instacne.find('ADUser', idOrSid)
+    }
+}
+
 router.get('/computers/:sid/info', guard.check('aduser:read'), async (req: Request, res: Response) => {
     let instacne = ClientFactory.createClient('neode') as Neode
-
+    let elasticClient = ClientFactory.createClient('elastic')
+    let computer = await getComputer(req.params.sid)
+    if (!computer) {
+        return res.status(404).json({
+            message: 'computer not found',
+        })
+    }
+    console.log(await computer.toJson())
     let response = {
         alertStates: [],
         alertSeverities: [],
+        lastDayLogCount: 0,
+        lastLogTime: undefined,
     }
     //alert states
     let builder = instacne.query()
@@ -197,7 +239,7 @@ router.get('/computers/:sid/info', guard.check('aduser:read'), async (req: Reque
         .match('alert', instacne.model('Alert'))
         .relationship('RELATED_TO', 'out', 'rel', 1)
         .to('computer', instacne.model('ADComputer'))
-        .where('computer.objectSid', req.params.sid)
+        .where('computer.objectSid', computer.get('objectSid'))
         .return('alert.state', 'count(*)')
         .build()
     let resp = await builder.execute()
@@ -209,34 +251,214 @@ router.get('/computers/:sid/info', guard.check('aduser:read'), async (req: Reque
         })
     }
     //alert severity
-    let respSeverity = await instacne.cypher(
-        'MATCH\n' +
-		'(rule:Rule)-[has_rule:`TRIGGERED`*1]->(alert:Alert)-[rel:`RELATED_TO`*1]->(computer:ADComputer)\n' +
-		'WHERE (computer.objectSid = {where_computer_objectSid}) \n' +
-		'RETURN\n' +
-		'rule.severity,count(*)\n',
-        {
-			where_computer_objectSid: req.params.sid
-		}
-    )
-    console.log(respSeverity)
-    for (let state of respSeverity.records) {
-        response.alertSeverities.push({
-            state: state.get('rule.severity').toInt(),
-            count: state.get('count(*)').toInt(),
-        })
+    try {
+        let respSeverity = await instacne.cypher(
+            'MATCH\n' +
+                '(rule:Rule)-[has_rule:`TRIGGERED`*1]->(alert:Alert)-[rel:`RELATED_TO`*1]->(computer:ADComputer)\n' +
+                'WHERE (computer.objectSid = {where_computer_objectSid}) \n' +
+                'RETURN\n' +
+                'rule.severity,count(*)\n',
+            {
+                where_computer_objectSid: computer.get('objectSid'),
+            }
+        )
+        console.log(respSeverity)
+        for (let state of respSeverity.records) {
+            response.alertSeverities.push({
+                state: state.get('rule.severity') ? state.get('rule.severity').toInt() : state.get('rule.severity'),
+                count: state.get('count(*)').toInt(),
+            })
+        }
+    } catch (err) {
+        console.log(err)
     }
     //log count in last 1 day
-
+    let bodyLogCount = {
+        size: 0,
+        query: {
+            bool: {
+                must: [
+                    {
+                        range: {
+                            '@timestamp': {
+                                gte: 'now-1d',
+                            },
+                        },
+                    },
+                    {
+                        term: {
+                            'computer_name.keyword': {
+                                value: computer.get('dNSHostName'),
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+    }
+    const logCountResponse = await elasticClient.search({
+        index: 'winlogbeat-*',
+        body: bodyLogCount,
+    })
+    // console.log(logCountResponse, computer.get('dNSHostName'))
+    response.lastDayLogCount = logCountResponse.hits.total
     //last log time
+    let bodyLastLog = {
+        size: 1,
+        query: {
+            term: {
+                'computer_name.keyword': {
+                    value: computer.get('dNSHostName'),
+                },
+            },
+        },
+        sort: [
+            {
+                '@timestamp': {
+                    order: 'desc',
+                },
+            },
+        ],
+    }
+    const lastLogResponse = await elasticClient.search({
+        index: 'winlogbeat-*',
+        body: bodyLastLog,
+    })
+    console.log(lastLogResponse)
+    if (lastLogResponse.hits.hits.length == 1) {
+        response.lastLogTime = lastLogResponse.hits.hits[0]._source['@timestamp']
+    }
+
     res.json(response)
 })
 
-router.get('/users/:sid/info', guard.check('aduser:read'), (req: Request, res: Response) => {
+router.get('/users/:sid/info', guard.check('aduser:read'), async (req: Request, res: Response) => {
     //alert states
     //alert severity
+    //
+    //
+
+    let instacne = ClientFactory.createClient('neode') as Neode
+    let elasticClient = ClientFactory.createClient('elastic')
+    let user = await getUser(req.params.sid)
+    if (!user) {
+        return res.status(404).json({
+            message: 'user not found',
+        })
+    }
+    console.log(await user.toJson())
+    let response = {
+        alertStates: [],
+        alertSeverities: [],
+        computersLoggedIn: [],
+        lastLoginTime: undefined,
+    }
+    //alert states
+    let builder = instacne.query()
+    builder
+        .match('alert', instacne.model('Alert'))
+        .relationship('RELATED_TO', 'out', 'rel', 1)
+        .to('user', instacne.model('ADUser'))
+        .where('user.objectSid', user.get('objectSid'))
+        .return('alert.state', 'count(*)')
+        .build()
+    let resp = await builder.execute()
+    console.log(resp)
+    for (let state of resp.records) {
+        response.alertStates.push({
+            state: state.get('alert.state'),
+            count: state.get('count(*)').toInt(),
+        })
+    }
+    //alert severity
+    try {
+        let respSeverity = await instacne.cypher(
+            'MATCH\n' +
+                '(rule:Rule)-[has_rule:`TRIGGERED`*1]->(alert:Alert)-[rel:`RELATED_TO`*1]->(user:ADUser)\n' +
+                'WHERE (user.objectSid = {where_user_objectSid}) \n' +
+                'RETURN\n' +
+                'rule.severity,count(*)\n',
+            {
+                where_user_objectSid: user.get('objectSid'),
+            }
+        )
+        console.log(respSeverity)
+        for (let state of respSeverity.records) {
+            response.alertSeverities.push({
+                state: state.get('rule.severity') ? state.get('rule.severity').toInt() : state.get('rule.severity'),
+                count: state.get('count(*)').toInt(),
+            })
+        }
+    } catch (err) {
+        console.log(err)
+    }
     //login count in computer
+    let bodyLoginCount = {
+        size: 0,
+        query: {
+            bool: {
+                must: [
+                    {
+                        term: {
+                            event_id: {
+                                value: 4624,
+                            },
+                        },
+                    },
+                    {
+                        term: {
+                            'event_data.TargetUserSid.keyword': {
+                                value: user.get('objectSid'),
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+        aggs: {
+            computers: {
+                terms: {
+                    field: 'computer_name.keyword',
+                    size: 10,
+                },
+            },
+        },
+    }
+    const logCountResponse = await elasticClient.search({
+        index: 'winlogbeat-*',
+        body: bodyLoginCount,
+    })
+    console.log(logCountResponse)
+    response.computersLoggedIn = logCountResponse.aggregations.computers.buckets
     //last login time
+    /*
+    let bodyLastLog = {
+        size: 1,
+        query: {
+            term: {
+                'computer_name.keyword': {
+                    value: user.get('dNSHostName'),
+                },
+            },
+        },
+        sort: [
+            {
+                '@timestamp': {
+                    order: 'desc',
+                },
+            },
+        ],
+    }
+    const lastLogResponse = await elasticClient.search({
+        index: 'winlogbeat-*',
+        body: bodyLastLog,
+    })
+    console.log(lastLogResponse)
+    if (lastLogResponse.hits.hits.length == 1) {
+        response.lastLogTime = lastLogResponse.hits.hits[0]._source['@timestamp']
+    }
+*/
+    res.json(response)
 })
 
 router.get('/users', guard.check('aduser:read'), (req: Request, res: Response) => {

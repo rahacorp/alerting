@@ -4,7 +4,8 @@ export default class ADUser {
     static model: Neode.SchemaObject = {
         objectSid: {
             type: 'string',
-            unique: true
+            unique: true,
+            primary: true
         },
         email: 'string',
         cn: 'string',

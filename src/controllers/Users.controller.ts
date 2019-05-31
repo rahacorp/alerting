@@ -267,6 +267,26 @@ router.get('/self', guard.check('user:self'), async (req: any, res: Response) =>
 	}
 })
 
+router.post('/self/resetPassword', guard.check('user:self'), async (req: Request, res: Response) => {
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		console.log(req.user.username)
+		let user = await instacne.model('User').find(req.user.username)
+		if(!user) {
+			throw new Error(' user not found')
+		}
+		let update = await user.update({
+			password: getHashedPassword(req.body.password),
+			username: user.get('username'),
+			role: user.get('role')
+		})
+		res.json(await update.toJson())
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
+})
 router.get('/:userID', guard.check('user:read'), async (req: Request, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
