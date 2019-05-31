@@ -35,7 +35,8 @@ export class ClientFactory {
                 ClientFactory.clients[type] = client
                 return client
             } else if (type === 'logstash') {
-                let client = new LogstashClient(config.logstash.address)
+                let client = new LogstashClient('http://192.168.1.218:9600')
+                // let client = new LogstashClient(config.logstash.address)
                 ClientFactory.clients[type] = client
                 return client
             } else if (type === 'neo4j') {
