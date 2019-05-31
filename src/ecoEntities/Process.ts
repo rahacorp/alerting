@@ -2,19 +2,26 @@ import Neode from 'neode'
 
 export default class Process {
     static model: Neode.SchemaObject = {
-        processGuid: {
+        ProcessGuid: {
             type: 'string',
-            unique: true
+            unique: true,
+            primary: true
         },
-        commandLine: 'string',
-        company: 'string',
+        CommandLine: 'string',
         CurrentDirectory: 'string',
-        operatingSystem: 'string',
-        operatingSystemVersion: 'string',
-        processId: 'number',
-        terminalSessionId: 'number',
-        utcTime: 'datetime',
+        ParentImage: 'string',
+        ParentCommandLine: 'string',
+        ProcessId: 'number',
+        ParentProcessGuid: 'string',
+        UtcTime: 'datetime',
         startTime: 'datetime',
         endTime: 'datetime',
+        Hashes: 'string',
+        Image: 'string',
+        IntegrityLevel: 'string',
+        Company: 'string',
+        Product: 'string',
+        Description: 'string',
+        User: 'string',
     }
 }

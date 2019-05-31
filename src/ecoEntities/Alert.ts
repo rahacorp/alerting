@@ -15,8 +15,11 @@ export default class Alert {
             required: true
         },
         created_at: {
-            type: 'number',
+            type: 'datetime',
             required: true
+        },
+        occured_at: {
+            type: 'datetime'
         },
         comment: {
             type: 'relationship',
@@ -45,6 +48,14 @@ export default class Alert {
         related_to_user: {
             type: 'relationships',
             target: 'ADUser',
+            direction: 'out',
+            relationship: 'RELATED_TO',
+            properties: {},
+            eager: true
+        },
+        related_to_process: {
+            type: 'relationships',
+            target: 'Process',
             direction: 'out',
             relationship: 'RELATED_TO',
             properties: {},
