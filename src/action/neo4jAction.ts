@@ -34,7 +34,7 @@ export class Neo4jAction implements Action {
 
 
 		
-		let q = `MATCH (p:Alert {hash: {hash}}) where abs(duration.inSeconds(p.occured_at, {occured_at}).seconds) > 1000*60*60*5 WITH p ORDER BY p.created_at
+		let q = `MATCH (p:Alert {hash: {hash}}) where abs(duration.inSeconds(p.occured_at, {occured_at}).seconds) < 1000*60*60*5 WITH p ORDER BY p.created_at
 		WITH COLLECT(p) AS nodes
 		CALL apoc.refactor.mergeNodes(
 			nodes,
