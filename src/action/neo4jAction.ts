@@ -68,6 +68,8 @@ export class Neo4jAction implements Action {
 				let occuredAt = undefined
 				if(obj && obj._source && obj._source['@timestamp']) { 
 					occuredAt = new Date(obj._source['@timestamp'])
+				} else if(obj && obj['time']) { 
+					occuredAt = new Date(obj['time'])
 				}
 				if(!occuredAt) {
 					occuredAt = new Date()
