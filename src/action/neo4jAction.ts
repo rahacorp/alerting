@@ -66,7 +66,7 @@ export class Neo4jAction implements Action {
                 console.log("[" + action.name + "]", obj, rule.name + ":" + sourceID);
                 let neo4jSession = ClientFactory.createClient("neo4j_session");
 				let occuredAt = undefined
-				if(obj._source['@timestamp']) { 
+				if(obj._source && obj._source['@timestamp']) { 
 					occuredAt = new Date(obj._source['@timestamp'])
 				}
 				if(!occuredAt) {
