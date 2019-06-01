@@ -202,7 +202,7 @@ router.get('/assignedToUser/:username', guard.check('alert:read'), async (req: R
 	}
 })
 
-router.get('/:alertId', guard.check('alert:read'), async (req: Request, res: Response) => {
+router.get('/:alertId', guard.check('alert:read'), async (req: any, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
         console.log(req.user.username)

@@ -8,17 +8,12 @@ import {eagerNode} from 'neode/build/Query/EagerUtils';
 
 import expressPerm from "express-jwt-permissions";
 import { Object } from "es6-shim";
+import User from "../ecoEntities/User";
 const guard = expressPerm();
 
 // Assign router to the express.Router() instance
 const router: Router = Router();
 
-function getHashedPassword(pass: string) {
-	return crypto
-		.createHash("sha1")
-		.update(pass + "saltt")
-		.digest("hex");
-}
 
 function getPermissionsByRole(role: string) {
 	let permissions = []
@@ -127,7 +122,7 @@ router.put('/:userID/update', guard.check('user:write'), async (req: Request, re
 			throw new Error('user not found')
 		}
 		if(req.body.password) {
-			req.body.password = getHashedPassword(req.body.password)
+			req.body.password = User.getHashedPassword(req.body.password)
 		}
 		let old = await user.toJson()
 		for(let key of Object.keys(req.body)) {
@@ -162,7 +157,7 @@ router.delete('/:userID', guard.check('user:delete'), async (req: Request, res: 
 })
 
 
-router.get('/notifications', guard.check('user:read'), async (req: Request, res: Response) => {
+router.get('/notifications', guard.check('user:read'), async (req: any, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
         let limit : number = 20
@@ -223,7 +218,7 @@ router.get('/notifications', guard.check('user:read'), async (req: Request, res:
 })
 
 
-router.get('/notifications/:notifId', guard.check('user:read'), async (req: Request, res: Response) => {
+router.get('/notifications/:notifId', guard.check('user:read'), async (req: any, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
 		let builder = instacne.query()
@@ -267,7 +262,7 @@ router.get('/self', guard.check('user:self'), async (req: any, res: Response) =>
 	}
 })
 
-router.post('/self/resetPassword', guard.check('user:self'), async (req: Request, res: Response) => {
+router.post('/self/resetPassword', guard.check('user:self'), async (req: any, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
 		console.log(req.user.username)
@@ -276,7 +271,7 @@ router.post('/self/resetPassword', guard.check('user:self'), async (req: Request
 			throw new Error(' user not found')
 		}
 		let update = await user.update({
-			password: getHashedPassword(req.body.password),
+			password: User.getHashedPassword(req.body.password),
 			username: user.get('username'),
 			role: user.get('role')
 		})
@@ -315,7 +310,7 @@ router.post('/newUser', guard.check('user:create'), async (req: Request, res: Re
 		console.log(req.body)
 		let instacne = ClientFactory.createClient("neode") as Neode;
 		if(req.body.password) {
-			req.body.password = getHashedPassword(req.body.password)
+			req.body.password = User.getHashedPassword(req.body.password)
 		}
 		let user = await instacne.create('User', req.body)
 		if(!user) {

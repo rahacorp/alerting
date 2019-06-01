@@ -6,3 +6,4 @@ export * from './Users.controller';
 export * from './Alerts.controller';
 export * from './Environment.controller';
 export * from './Logs.controller';
+export * from './Settings.controller';

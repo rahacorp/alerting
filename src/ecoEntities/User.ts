@@ -1,5 +1,6 @@
 import Neode from 'neode'
 import { ClientFactory } from '../clientFactory/ClientFactory';
+import crypto from "crypto";
 
 export default class User {
     static model: Neode.SchemaObject = {
@@ -50,8 +51,11 @@ export default class User {
         return undefined
     }
 
-    resetPassword(newPassword: string) {
-
+    static getHashedPassword(newPassword: string) {
+        return crypto
+            .createHash("sha1")
+            .update(newPassword + "saltt")
+            .digest("hex");
     }
 
     static async notify(user: Neode.Node<{}>, text: string, alert: Neode.Node<{}>) {

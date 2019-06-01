@@ -10,13 +10,13 @@ import bodyParser from 'body-parser'
 import jwt from 'express-jwt'
 
 import {
-    ApiController,
     AuthController,
     StatsController,
     UserController,
     AlertsController,
     EnvironmentController,
     LogsController,
+    SettingsController
 } from './src/controllers/Controllers'
 import {ClientFactory} from './src/clientFactory/ClientFactory'
 
@@ -349,7 +349,7 @@ if (process.argv.length < 3) {
     // app.use("/auth", jwt({ secret: "shhhhhhared-secret" }), AuthController);
     app.use(
         jwt({secret: 'shhhhhhared-secret'}).unless({
-            path: ['/api/v1/auth/login', '/api/v1/auth/register'],
+            path: ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/settings/setup'],
         })
     )
 
@@ -361,6 +361,7 @@ if (process.argv.length < 3) {
     app.use('/api/v1/alerts', AlertsController)
     app.use('/api/v1/environment', EnvironmentController)
     app.use('/api/v1/logs', LogsController)
+    app.use('/api/v1/settings', SettingsController)
 
     app.listen(port, () => {
         console.log(`Listening at http://localhost:${port}/`)
