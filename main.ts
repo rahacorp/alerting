@@ -362,11 +362,19 @@ if (process.argv.length < 3) {
     app.use('/api/v1/environment', EnvironmentController)
     app.use('/api/v1/logs', LogsController)
     app.use('/api/v1/settings', SettingsController)
-
-    app.listen(port, () => {
+    try {
+        ClientFactory.fillConfigFromDB()
+    } catch(err) {
+        console.log('init fill config failed ', err)
+    }
+    app.listen(port, async () => {
         console.log(`Listening at http://localhost:${port}/`)
         // Startup.runAllRulesPriodically();
-        ClientFactory.checkHealth()
+        try {
+            ClientFactory.checkHealth()
+        } catch(err) {
+            console.log('check health failed ', err.message)
+        }
     })
 } else {
     if (process.argv[2] == '-help') {
