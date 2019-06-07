@@ -189,7 +189,7 @@ async function getComputer(idOrSid: any): Promise<Neode.Node<{}>> {
     let computer = undefined
     try {
         computer = await instacne.findById('ADComputer', idOrSid)
-        if(computer) {
+        if (computer) {
             return computer
         }
     } catch (err) {
@@ -200,13 +200,18 @@ async function getComputer(idOrSid: any): Promise<Neode.Node<{}>> {
     }
 }
 
+async function getComputerByDnsHostName(dnsHostName: string): Promise<Neode.Node<{}>> {
+    let instacne = ClientFactory.createClient('neode') as Neode
+    return instacne.first('ADComputer', 'dNSHostName', dnsHostName)
+}
+
 async function getUser(idOrSid: any): Promise<Neode.Node<{}>> {
     let instacne = ClientFactory.createClient('neode') as Neode
     let user = undefined
     console.log(idOrSid)
     try {
         user = await instacne.findById('ADUser', idOrSid)
-        if(user) {
+        if (user) {
             return user
         }
     } catch (err) {
@@ -332,6 +337,156 @@ router.get('/computers/:sid/info', guard.check('aduser:read'), async (req: Reque
     res.json(response)
 })
 
+async function findLastTicketedComputerByIP(ip: string, time: string): Promise<Neode.Node<{}>> {
+    let instacne = ClientFactory.createClient('neode') as Neode
+    let elasticClient = ClientFactory.createClient('elastic')
+    let logins = {
+        size: 1,
+        query: {
+            bool: {
+                must: [
+                    {
+                        query_string: {
+                            query: 'event_data.TargetUserName:*$',
+                        },
+                    },
+                    {
+                        term: {
+                            event_id: {
+                                value: 4768,
+                            },
+                        },
+                    },
+                    {
+                        term: {
+                            'event_data.IpAddress': {
+                                value: '::ffff:' + ip,
+                            },
+                        },
+                    },
+                    {
+                        range: {
+                            '@timestamp': {
+                                lte: time,
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+        sort: [
+            {
+                '@timestamp': {
+                    order: 'desc',
+                },
+            },
+        ],
+    }
+    const loginResponse = await elasticClient.search({
+        index: 'winlogbeat-*',
+        body: logins,
+    })
+    if (loginResponse.hits.total == 0) {
+        return undefined
+    } else {
+        let hit = loginResponse.hits.hits[0]
+        return instacne.find('ADComputer', hit._source.event_data.TargetSid)
+    }
+}
+
+router.get('/users/:sid/logins', guard.check('aduser:read'), async (req: Request, res: Response) => {
+    //alert states
+    //alert severity
+    //
+    //
+
+    let instacne = ClientFactory.createClient('neode') as Neode
+    let elasticClient = ClientFactory.createClient('elastic')
+    let user = await getUser(req.params.sid)
+    if (!user) {
+        return res.status(404).json({
+            message: 'user not found',
+        })
+    }
+    console.log(await user.toJson())
+    let logins = {
+        size: 100,
+        query: {
+            bool: {
+                must: [
+                    {
+                        term: {
+                            event_id: {
+                                value: 4624,
+                            },
+                        },
+                    },
+                    {
+                        term: {
+                            'event_data.TargetUserSid.keyword': {
+                                value: user.get('objectSid'),
+                            },
+                        },
+                    },
+                    {
+                        term: {
+                            'event_data.LogonType': {
+                                value: 10,
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+    }
+    const loginResponse = await elasticClient.search({
+        index: 'winlogbeat-*',
+        body: logins,
+    })
+    console.log(loginResponse)
+    let graph = {
+        nodes: [],
+        edges: [],
+    }
+    let nodes = {}
+    for (let event of loginResponse.hits.hits) {
+        let sourceIp = event._source.event_data.IpAddress
+        let destComputer = await instacne.first('ADComputer', 'dNSHostName', event._source.computer_name)
+        let sourceComputer = await findLastTicketedComputerByIP(sourceIp, event._source['@timestamp'])
+        let dest = await destComputer.toJson() as any
+        // let test = await findLastTicketedComputerByIP('192.168.1.124', event._source['@timestamp'])
+        let source = undefined
+        if(sourceComputer) {
+            source = await sourceComputer.toJson()
+        } else {
+            source = {
+                _id: sourceIp,
+                dnsHostName: 'ip:' + sourceIp,
+            }
+        }
+        if(!nodes[source._id]) {
+            nodes[source._id] = source
+        }
+        if(!nodes[dest._id]) {
+            nodes[dest._id] = dest
+        }
+        console.log(source._id, '==>', dest._id)
+        graph.edges.push({
+            sourceId: source._id,
+            destId: dest._id,
+            timestamp: event._source['@timestamp'],
+            sourceIp: sourceIp,
+
+        })
+        // graph.nodes[sourceComputer.sid] = sourceComputer
+    }
+    for(let nodeId of Object.keys(nodes)) {
+        graph.nodes.push(nodes[nodeId])
+    }
+    
+    console.log(graph)
+    res.json(graph)
+})
 router.get('/users/:sid/info', guard.check('aduser:read'), async (req: Request, res: Response) => {
     //alert states
     //alert severity
