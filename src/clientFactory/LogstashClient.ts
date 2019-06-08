@@ -52,7 +52,7 @@ export default class LogstashClient {
                             logstashClient.health.kafka_input.status = 'green'
                         } else {
                             if (logstashClient.health.kafka_input.status == 'green') {
-                                logstashClient.health.kafka_input.status = 'yellow'
+                                logstashClient.health.kafka_input.status = 'gold'
                             } else {
                                 logstashClient.health.kafka_input.status = 'red'
                             }
@@ -65,7 +65,7 @@ export default class LogstashClient {
                             logstashClient.health.elastic_output.status = 'green'
                         } else {
                             if (logstashClient.health.elastic_output.status == 'green') {
-                                logstashClient.health.elastic_output.status = 'yellow'
+                                logstashClient.health.elastic_output.status = 'gold'
                             } else {
                                 logstashClient.health.elastic_output.status = 'red'
                             }

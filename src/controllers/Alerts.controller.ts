@@ -316,12 +316,12 @@ router.post('/:alertId/setState', guard.check('alert:write'), async (req: any, r
 		}
 		console.log({
 			state: req.body.state,
-			created_at: (alert.get('created_at') as any).toInt(),
+			created_at: alert.get('created_at'),
 			sourceID: alert.get('sourceID'),
 		})
 		await alert.update({
 			state: req.body.state,
-			created_at: (alert.get('created_at') as any).toInt(),
+			created_at: alert.get('created_at'),
 			sourceID: alert.get('sourceID'),
 		})
 		await User.comment(user, req.body.state, 'state', alert)

@@ -177,7 +177,7 @@ export class ClientFactory {
                         format: 'json',
                     })
                     ClientFactory.health.elastic.data = elasticStatus[0]
-                    ClientFactory.health.elastic.status = elasticStatus[0].status
+                    ClientFactory.health.elastic.status = elasticStatus[0].status == 'yellow' ? 'gold' : elasticStatus[0].status 
                 } catch (err) {
                     ClientFactory.health.elastic.status = 'red'
                 }
