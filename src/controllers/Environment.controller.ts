@@ -395,11 +395,6 @@ async function findLastTicketedComputerByIP(ip: string, time: string): Promise<N
 }
 
 router.get('/users/:sid/logins', guard.check('aduser:read'), async (req: Request, res: Response) => {
-    //alert states
-    //alert severity
-    //
-    //
-
     let instacne = ClientFactory.createClient('neode') as Neode
     let elasticClient = ClientFactory.createClient('elastic')
     let user = await getUser(req.params.sid)
