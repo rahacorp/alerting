@@ -368,7 +368,32 @@ router.post('/:alertId/comment', guard.check('alert:write'), async (req: any, re
 })
 
 router.post('/comment/:commentId/upload', upload.single('attachment'), guard.check('alert:write'), async (req: any, res: Response) => {
-    console.log(req.file)
+	console.log(req.file)
+	try {
+		let instacne = ClientFactory.createClient("neode") as Neode;
+		let comment = await instacne.model('Comment').findById(req.params.commentId)
+		if(!comment) {
+			return res.status(404).json({
+                message: 'comment not found'
+            })
+		}
+		// return res.send('end')
+		let attachment = await instacne.create('Attachment', {
+            name: req.file.originalname,
+            file_path: req.file.filename,
+            created_at: Date.now(),
+            size: req.file.size,
+        })
+		let rel = await comment.relateTo(attachment, 'attachment', {})
+		res.json({
+			id: rel.id()
+		})
+
+	} catch (err) {
+		return res.status(400).json({
+			message: err.message
+		});
+	}
 })
 
 router.get('/:alertId/comment', guard.check('alert:read'), async (req: any, res: Response) => {

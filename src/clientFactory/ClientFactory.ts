@@ -17,6 +17,7 @@ import Rule from '../ecoEntities/Rule'
 import LogstashClient from './LogstashClient'
 import * as fs from 'fs'
 import * as path from 'path'
+import Attachment from '../ecoEntities/Attachment';
 
 export class ClientFactory {
     static clients: any
@@ -118,6 +119,7 @@ export class ClientFactory {
                 instance.model('Process', Process.model)
                 instance.model('User', User.model)
                 instance.model('Alert', Alert.model)
+                instance.model('Attachment', Attachment.model)
                 instance.model('Comment', Comment.model)
                 instance.model('Notification', Notification.model)
                 instance.model('Rule', Rule.model)

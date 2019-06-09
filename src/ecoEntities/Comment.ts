@@ -23,7 +23,7 @@ export default class Comment {
             eager: true
         },
         attachment: {
-            type: 'relationship',
+            type: 'relationships',
             target: 'Attachment',
             direction: 'out',
             relationship: 'ATTACHMENT',
