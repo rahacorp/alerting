@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { ClientFactory } from "../clientFactory/ClientFactory";
 import jwt from "jsonwebtoken";
+import {v1 as neo4j} from 'neo4j-driver'
 import crypto from "crypto";
 import Neode from "neode"
 import {eagerNode} from 'neode/build/Query/EagerUtils';
@@ -146,12 +147,20 @@ router.put('/:userID/update', guard.check('user:write'), async (req: Request, re
 router.delete('/:userID', guard.check('user:delete'), async (req: Request, res: Response) => {
 	try {
 		let instacne = ClientFactory.createClient("neode") as Neode;
-		let user = await instacne.findById('User', req.params.userID)
-		if(!user) {
-			throw new Error('user not found')
+		let resp = await instacne.cypher("MATCH (n:User) WHERE ID(n) = {userID} DETACH DELETE n", 
+			{
+				userID: neo4j.int(req.params.userID)
+			})
+		
+		if(resp.summary.counters.nodesDeleted() == 1) {
+			res.json({
+				message: 'user deleted'
+			})
+		} else {
+			res.status(404).json({
+				message: 'user not found'
+			})
 		}
-		let delUser = await user.delete()
-		res.json(await delUser.toJson())
 	} catch (err) {
 		return res.status(400).json({
 			message: err.message
