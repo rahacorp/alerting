@@ -225,6 +225,7 @@ router.post('/:alertId/assign', guard.check('alert:assign'), async (req: any, re
 		let instacne = ClientFactory.createClient("neode") as Neode;
         console.log(req.user.username)
         let user = await instacne.model('User').find(req.user.username)
+        let userTarget = await instacne.model('User').find(req.body.username)
 		let alert = await instacne.model('Alert').findById(req.params.alertId)
         if(!alert) {
 			return res.status(404).json({
@@ -236,8 +237,8 @@ router.post('/:alertId/assign', guard.check('alert:assign'), async (req: any, re
 				message: 'user not found'
             })
 		}
-		await alert.relateTo(user, 'assigned_to', {})
-		await User.notify(user, 'new alert assigned to you', alert)
+		await alert.relateTo(userTarget, 'assigned_to', {})
+		await User.notify(userTarget, 'new alert assigned to you', alert)
 		await User.comment(user, req.body.username, 'assign', alert)
 
 		res.json(await alert.toJson())
@@ -262,7 +263,7 @@ router.post('/:alertId/unassign', guard.check('alert:unassign'), async (req: any
 			.relationship('ASSIGNED_TO', 'out', 'rel', undefined)
 			.to('user', instacne.model('User'))
 			.whereId('alert', req.params.alertId)
-			.where('user.username', req.user.username)
+			.where('user.username', req.body.username)
 			.delete('rel')
 			.build()
 		let assign = await builder.execute()
