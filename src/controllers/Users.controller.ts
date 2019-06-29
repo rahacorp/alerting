@@ -209,7 +209,7 @@ router.get('/notifications', guard.check('user:read'), async (req: any, res: Res
 			.to('notif', instacne.model('Notification'))
 			.where('user.username', req.user.username)
 			.return(eagerNode(instacne, 1, 'notif', instacne.model('Notification')))
-			.orderBy('notif.read', 'ASC')
+			// .orderBy('notif.read', 'ASC')
 			.orderBy('notif.created_at', 'DESC')
 			.skip(skip).limit(limit)
 			.build()
@@ -246,12 +246,12 @@ router.get('/notifications/:notifId', guard.check('user:read'), async (req: any,
 			
 		let assign = await builder.execute()
 		let notif = instacne.hydrateFirst(assign, 'notif', instacne.model('Notification'))
-		notif.update({
+		let updatedNotif = await notif.update({
 			read: true,
 			text: notif.get('text'),
 			created_at: notif.get('created_at')
 		})
-		res.json(await notif.toJson())
+		res.json(await updatedNotif.toJson())
 	} catch (err) {
 		return res.status(400).json({
 			message: err.message
