@@ -6,6 +6,8 @@ import {Action} from './src/action/action'
 import {ADSynchronizer} from './src/webapp/ADSynchronizer'
 import * as util from 'util'
 import express from 'express'
+import yaml from 'js-yaml'
+import { exec } from 'child_process'
 import bodyParser from 'body-parser'
 import jwt from 'express-jwt'
 
@@ -110,6 +112,97 @@ export default class Startup {
                 console.log(ruleName)
             }
             process.exit()
+        } else if (args[0] === 'sigma_convert') {
+            let sigmaRuleJs = yaml.load(fs.readFileSync(args[1]))
+            exec('sigmac -t "es-qs" -c "elk-winlogbeat-old.yml" "' + args[1] + '"', (err, stdout, stderr) => {
+            // exec('cmd /c echo %PATH%', (err, stdout, stderr) => {
+                if (err) {
+                    console.log('sigmac error ', err, stderr)
+                   return;
+                }
+                let qs = stdout.trim()
+                function levelToSeverity(level: string) : number {
+                    if (level === "high") {
+                        return 7
+                    }
+                    return 1
+                }
+                console.log(qs)
+                let ruleConfig = {
+                    "name": "detect_lsass_dump",
+                    "title": sigmaRuleJs.title,
+                    "status": sigmaRuleJs.status,
+                    "description": sigmaRuleJs.description,
+                    "package": "ir.raha.detect.lsass.dump",
+                    "severity": levelToSeverity(sigmaRuleJs.level),
+                    "author": sigmaRuleJs.author,
+                    "references": sigmaRuleJs.references,
+                    "tags": sigmaRuleJs.tags,
+                    "triggers": [],
+                    "inputs": [{
+                        "name": "esinput",
+                        "type": "elasticsearch",
+                        "request": {
+                            "query": {
+                                "bool": {
+                                    "must": [{
+                                            "query_string": {
+                                                "query": qs
+                                            }
+                                        },
+                                        {
+                                            "range": {
+                                                "@timestamp": {
+                                                    "gte": "{last_successful_check}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "post_process": [{
+                            "condition": "true",
+                            "iterate": {
+                                "iterateObject": "inputs.esinput.response.hits.hits",
+                                "iterateDestination": "my_hit",
+                                "condition": "true"
+                            },
+                            "action": {
+                                "type": "console",
+                                "name": "alert_iterate",
+                                "relations": {
+                                    "ADUser": [
+                                        {
+                                            "field": "logonName",
+                                            "value": "{my_hit._source.event_data.User}"
+                                        }
+                                    ],
+                                    "ADComputer": [
+                                        {
+                                            "field": "dNSHostName",
+                                            "value": "{my_hit._source.computer_name}"
+                                        }
+                                    ],
+                                    "Process": [
+                                        {
+                                            "field": "ProcessGuid",
+                                            "value": "{my_hit._source.event_data.SourceProcessGUID}"
+                                        }
+                                    ]
+                                }
+                            }
+                        }]
+                    }],
+                    "condition": "false",
+                    "actions": []
+                }
+                
+                // the *entire* stdout and stderr (buffered)
+                console.log(ruleConfig)
+                let yamlRule = new Rule(ruleConfig)
+                yamlRule.start()
+            });
         }
         // console.log('happy sarbazi')
     }
@@ -291,6 +384,7 @@ export default class Startup {
             'set_last_run {rule_package} {rule_name} {last_run_time}: sets last success run of rule to provided date and time \n' +
             'run {rule_package} {rule_name}: runs the rule, you can also use regexp here => run .* .* (runs all rules) \n' +
             'adsync [--only-computers] [--only-users]:: syncs db with active directory \n'
+            'sigma_convert {sigma_rule_address} {output_file}: converts a sigma rule to raymon rule \n' +
         console.log(help)
     }
 
@@ -328,7 +422,11 @@ export default class Startup {
 // Startup.main2();
 
 console.log(process.argv)
-
+try {
+    ClientFactory.fillConfigFromDB()
+} catch(err) {
+    console.log('init fill config failed ', err)
+}
 if (process.argv.length < 3) {
     app.use(
         bodyParser.urlencoded({
@@ -362,11 +460,7 @@ if (process.argv.length < 3) {
     app.use('/api/v1/environment', EnvironmentController)
     app.use('/api/v1/logs', LogsController)
     app.use('/api/v1/settings', SettingsController)
-    try {
-        ClientFactory.fillConfigFromDB()
-    } catch(err) {
-        console.log('init fill config failed ', err)
-    }
+
     app.listen(port, async () => {
         console.log(`Listening at http://localhost:${port}/`)
         // Startup.runAllRulesPriodically();

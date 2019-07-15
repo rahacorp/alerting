@@ -52,28 +52,17 @@ export class ClientFactory {
             this.config.neo4j.address = fileConfig.neo4j.address
             this.config.neo4j.username = fileConfig.neo4j.username
             this.config.neo4j.password = fileConfig.neo4j.password
+            
+            this.config.elasticConfig.host = fileConfig.elastic.host
+
+            this.config.activeDirectory.url = fileConfig.ad.url
+            this.config.activeDirectory.baseDN = fileConfig.ad.basedn
+            this.config.activeDirectory.username = fileConfig.ad.username
+            this.config.activeDirectory.password = fileConfig.ad.password
+
+            this.config.logstash.address = fileConfig.logstash.address
             // let instacne = ClientFactory.createClient("neode") as Neode;
-            let instacne = new Neode(this.config.neo4j.address, this.config.neo4j.username, this.config.neo4j.password)
-
-            instacne.cypher("MERGE (config:Config {name: 'config'}) return config", {}).then((result) => {
-                if (result.records.length == 1) {
-                    let configRecord = result.records[0].get('config') as neo4j.Node
-                    // console.log(config.properties)
-                    let config = configRecord.properties as any
-                    this.config.elasticConfig = {
-                        host: config.elastic_host
-                    }
-
-                    this.config.activeDirectory.url = config.ad_url
-                    this.config.activeDirectory.baseDN = config.ad_basedn
-                    this.config.activeDirectory.username = config.ad_username
-                    this.config.activeDirectory.password = config.ad_password
-
-                    this.config.logstash.address = config.logstash_address
-                    console.log(this.config)
-                    ClientFactory.clients = {}
-                }
-            })
+            ClientFactory.clients = {}
         } else {
             throw new Error('server not configured')
         }

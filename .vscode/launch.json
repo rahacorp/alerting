@@ -8,13 +8,16 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
+            "sourceMaps": true,
             "program": "${workspaceFolder}/main.ts",
-            "args": [],
+            // "preLaunchTask": "tsc: build - tsconfig.json",
+            // "args": [],
+            // "args": ["sigma_convert", "C:\\Users\\alireza\\Desktop\\Programming\\personal\\sigma\\rules\\windows\\sysmon\\sysmon_mimikatz_detection_lsass.yml", "test.js"],
             // "args": ["run", "ir.raha.detect.bruteforce", "detect_bruteforce"],
             // "args": ["adsync"],
-            // "args": ["add", "C:\\Users\\alireza\\Desktop\\Programming\\personal\\rules\\jsonRule"],
+            "args": ["add", "C:\\Users\\alireza\\Desktop\\Programming\\personal\\rules\\jsonRule"],
             "outFiles": [
-                "${workspaceFolder}/**/*.js"
+                "${workspaceFolder}/bin/**/*.js"
             ]
         }
     ]

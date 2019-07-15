@@ -325,7 +325,9 @@ router.post('/:alertId/setState', guard.check('alert:write'), async (req: any, r
 			created_at: alert.get('created_at'),
 			sourceID: alert.get('sourceID'),
 		})
+		console.log('updated')
 		await User.comment(user, req.body.state, 'state', alert)
+		console.log('commented')
 		res.json({
 			success: true,
 			message: 'state changed successfully'

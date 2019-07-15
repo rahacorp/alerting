@@ -30,19 +30,7 @@ router.post('/setup', async (req: Request, res: Response) => {
     let instacne = new Neode(req.body.neo4j_address, req.body.neo4j_username, req.body.neo4j_password)
     instacne.model('User', User.model)
     console.log('connected')
-    try {
-        await instacne.cypher(
-            "MERGE (config:Config {name: 'config'}) SET config.elastic_host = {elastic_host} " +
-                ', config.ad_url = {ad_url}, config.ad_basedn = {ad_basedn}, config.ad_username = {ad_username}, config.ad_password = {ad_password} ' +
-                ', config.neo4j_address = {neo4j_address}, config.neo4j_username = {neo4j_username}, config.neo4j_password = {neo4j_password} ' +
-                ', config.logstash_address = {logstash_address}',
-            req.body
-        )
-    } catch (err) {
-        return res.status(400).json({
-            message: err.message,
-        })
-    }
+    
 
     fs.writeFileSync(
         configFilePath,
@@ -52,6 +40,18 @@ router.post('/setup', async (req: Request, res: Response) => {
                 username: req.body.neo4j_username,
                 password: req.body.neo4j_password,
             },
+            ad: {
+                url: req.body.ad_url,
+                basedn: req.body.ad_basedn,
+                username: req.body.ad_username,
+                password: req.body.ad_password,
+            },
+            logstash: {
+                address: req.body.logstash_address
+            },
+            elastic: {
+                host: req.body.elastic_host
+            }
         })
     )
     let admin = await instacne.find('User', 'admin')
