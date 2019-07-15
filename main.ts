@@ -1,84 +1,89 @@
-import { Rule } from "./src/rule/rule";
-import { LogAction } from "./src/action/logAction";
-import * as fs from "fs";
-import * as path from "path";
-import { Action } from "./src/action/action";
-import { ADSynchronizer } from "./src/webapp/ADSynchronizer";
-import * as util from "util";
-import express from "express";
-import bodyParser from "body-parser";
-import jwt from "express-jwt";
+import {Rule} from './src/rule/rule'
+import {LogAction} from './src/action/logAction'
+import * as fs from 'fs'
+import * as path from 'path'
+import {Action} from './src/action/action'
+import {ADSynchronizer} from './src/webapp/ADSynchronizer'
+import * as util from 'util'
+import express from 'express'
+import yaml from 'js-yaml'
+import { exec } from 'child_process'
+import bodyParser from 'body-parser'
+import jwt from 'express-jwt'
 
-import { ApiController, AuthController, StatsController } from "./src/webapp/Controllers";
+import {
+    AuthController,
+    StatsController,
+    UserController,
+    AlertsController,
+    EnvironmentController,
+    LogsController,
+    SettingsController
+} from './src/controllers/Controllers'
+import {ClientFactory} from './src/clientFactory/ClientFactory'
 
-const app: express.Application = express();
-const port: number = parseInt(process.env.PORT) || 8080;
-app.use(express.static("dist"));
-app.use(express.static("public"));
+const app: express.Application = express()
+const port: number = parseInt(process.env.PORT) || 8080
+app.use(express.static('dist'))
+app.use(express.static('public'))
 /*
+
 app.use(function(err, req, res, next) {
 	if (err.code === "permission_denied") {
 		res.status(403).send("Forbidden");
 	}
 });
 */
-class Startup {
-	public static async main3(args) {
-		if (args[0] === "add" || args[0] === "update") {
-			let pathStr = args[1];
-			let update = args[0] === "update";
-			if (fs.lstatSync(pathStr).isDirectory()) {
-				console.log("processing directory :" + pathStr);
-				let promises = [];
-				fs.readdirSync(pathStr).forEach(file => {
-					promises.push(
-						Startup.addFileToDB(
-							path.join(pathStr, file),
-							update,
-							args[2]
-						)
-					);
-				});
-				Promise.all(promises)
-					.then(results => {
-						console.log("promises done");
-						for (let res of results) {
-							console.log(res);
-						}
-						process.exit();
-					})
-					.catch(error => {
-						console.log(error.message);
-					});
-			} else if (fs.lstatSync(pathStr).isFile()) {
-				await Startup.addFileToDB(pathStr, update, args[2]);
-				process.exit();
-			}
-		} else if (args[0] === "remove") {
-			let pkg = args[1];
-			let ruleName = args[2];
-			console.log("removing", pkg, ruleName, args[3]);
-			await Rule.removeFromNeo4j(pkg, ruleName, args[3] === "-force");
-			process.exit();
-		} else if (args[0] === "set_last_run") {
-			let pkg = args[1];
-			let ruleName = args[2];
-			let r = await Rule.fromDB(ruleName, pkg);
-			await r.addToNeo4j(true, args[3]);
-		} else if (args[0] === "adsync") {
-			let adSync = new ADSynchronizer();
-			let grp = await adSync.syncAllGroups();
-			console.log(grp);
-			await adSync.syncAllUsersAndGroups();
-			await adSync.syncAllComputers();
-			// process.exit();
-		} else if (args[0] === "run") {
-			let pkg = args[1];
-			let ruleName = args[2];
-			let allRules = await Rule.list(pkg, ruleName);
-			let promises = [];
-			console.log(allRules)
-			/*
+export default class Startup {
+    public static async main3(args) {
+        if (args[0] === 'add' || args[0] === 'update') {
+            let pathStr = args[1]
+            let update = args[0] === 'update'
+            if (fs.lstatSync(pathStr).isDirectory()) {
+                console.log('processing directory :' + pathStr)
+                let promises = []
+                fs.readdirSync(pathStr).forEach((file) => {
+                    promises.push(Startup.addFileToDB(path.join(pathStr, file), update, args[2]))
+                })
+                Promise.all(promises)
+                    .then((results) => {
+                        console.log('promises done')
+                        for (let res of results) {
+                            console.log(res)
+                        }
+                        process.exit()
+                    })
+                    .catch((error) => {
+                        console.log(error.message)
+                    })
+            } else if (fs.lstatSync(pathStr).isFile()) {
+                await Startup.addFileToDB(pathStr, update, args[2])
+                process.exit()
+            }
+        } else if (args[0] === 'remove') {
+            let pkg = args[1]
+            let ruleName = args[2]
+            console.log('removing', pkg, ruleName, args[3])
+            await Rule.removeFromNeo4j(pkg, ruleName, args[3] === '-force')
+            process.exit()
+        } else if (args[0] === 'set_last_run') {
+            let pkg = args[1]
+            let ruleName = args[2]
+            let r = await Rule.fromDB(ruleName, pkg)
+            await r.addToNeo4j(true, args[3])
+        } else if (args[0] === 'adsync') {
+            let adSync = new ADSynchronizer()
+            let grp = await adSync.syncAllGroups()
+            console.log(grp)
+            adSync.syncAllUsersAndGroups()
+            adSync.syncAllComputers()
+        } else if (args[0] === 'run') {
+            let pkg = args[1]
+            let ruleName = args[2]
+            let allRules = await Rule.list(pkg, ruleName)
+            let promises = []
+            console.log(allRules)
+            /*
 			allRules.forEach(rule => {
 				promises.push(rule.fire())
 			})
@@ -95,149 +100,233 @@ class Startup {
 					process.exit();
 				});
 			*/
-			for (let ruleName of Array.from(allRules.keys())) {
-				console.log(ruleName);
-				await allRules.get(ruleName).fire();
-				console.log('fire await done')
-			}
-			process.exit();
-		} else if (args[0] === "list") {
-			let allRules = await Rule.list(args[1], args[2]);
-			for (let ruleName of Array.from(allRules.keys())) {
-				console.log(ruleName);
-			}
-			process.exit();
-		}
-		// console.log('happy sarbazi')
-	}
+            for (let ruleName of Array.from(allRules.keys())) {
+                console.log(ruleName)
+                await allRules.get(ruleName).fire()
+                console.log('fire await done')
+            }
+            process.exit()
+        } else if (args[0] === 'list') {
+            let allRules = await Rule.list(args[1], args[2])
+            for (let ruleName of Array.from(allRules.keys())) {
+                console.log(ruleName)
+            }
+            process.exit()
+        } else if (args[0] === 'sigma_convert') {
+            let sigmaRuleJs = yaml.load(fs.readFileSync(args[1]))
+            exec('sigmac -t "es-qs" -c "elk-winlogbeat-old.yml" "' + args[1] + '"', (err, stdout, stderr) => {
+            // exec('cmd /c echo %PATH%', (err, stdout, stderr) => {
+                if (err) {
+                    console.log('sigmac error ', err, stderr)
+                   return;
+                }
+                let qs = stdout.trim()
+                function levelToSeverity(level: string) : number {
+                    if (level === "high") {
+                        return 7
+                    }
+                    return 1
+                }
+                console.log(qs)
+                let ruleConfig = {
+                    "name": "detect_lsass_dump",
+                    "title": sigmaRuleJs.title,
+                    "status": sigmaRuleJs.status,
+                    "description": sigmaRuleJs.description,
+                    "package": "ir.raha.detect.lsass.dump",
+                    "severity": levelToSeverity(sigmaRuleJs.level),
+                    "author": sigmaRuleJs.author,
+                    "references": sigmaRuleJs.references,
+                    "tags": sigmaRuleJs.tags,
+                    "triggers": [],
+                    "inputs": [{
+                        "name": "esinput",
+                        "type": "elasticsearch",
+                        "request": {
+                            "query": {
+                                "bool": {
+                                    "must": [{
+                                            "query_string": {
+                                                "query": qs
+                                            }
+                                        },
+                                        {
+                                            "range": {
+                                                "@timestamp": {
+                                                    "gte": "{last_successful_check}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        "post_process": [{
+                            "condition": "true",
+                            "iterate": {
+                                "iterateObject": "inputs.esinput.response.hits.hits",
+                                "iterateDestination": "my_hit",
+                                "condition": "true"
+                            },
+                            "action": {
+                                "type": "console",
+                                "name": "alert_iterate",
+                                "relations": {
+                                    "ADUser": [
+                                        {
+                                            "field": "logonName",
+                                            "value": "{my_hit._source.event_data.User}"
+                                        }
+                                    ],
+                                    "ADComputer": [
+                                        {
+                                            "field": "dNSHostName",
+                                            "value": "{my_hit._source.computer_name}"
+                                        }
+                                    ],
+                                    "Process": [
+                                        {
+                                            "field": "ProcessGuid",
+                                            "value": "{my_hit._source.event_data.SourceProcessGUID}"
+                                        }
+                                    ]
+                                }
+                            }
+                        }]
+                    }],
+                    "condition": "false",
+                    "actions": []
+                }
+                
+                // the *entire* stdout and stderr (buffered)
+                console.log(ruleConfig)
+                let yamlRule = new Rule(ruleConfig)
+                yamlRule.start()
+            });
+        }
+        // console.log('happy sarbazi')
+    }
 
-	static addFileToDB(path: string, update: boolean, lastTime: string) {
-		return new Promise(async (resolve, reject) => {
-			if (path.toLowerCase().endsWith(".json")) {
-				console.log("add to db ", path, update, lastTime);
-				let rule = Rule.fromFile(path);
-				try {
-					let res = await rule.addToNeo4j(update, lastTime);
-					resolve(res);
-				} catch (err) {
-					console.error(err);
-					reject(err);
-				}
-			} else {
-				reject(new Error("file is not .json"));
-			}
-		});
-	}
-	public static async main2() {
-		let filename =
-			"C:/Users/alireza/Desktop/Programming/personal/rules/Windows/detect_execute_commad_schtask.js";
-		let sampleRuler = require(filename);
-		let sampleRule = JSON.parse(JSON.stringify(sampleRuler));
-		let myAction = {
-			type: "alert",
-			name: "alert_iterate",
-			relations: {
-				ADUser: [
-					{
-						field: "logonName",
-						value:
-							"{my_hit._source.event_data.SubjectDomainName}\\{my_hit._source.event_data.SubjectUserName}"
-					}
-				],
-				ADComputer: [
-					{
-						field: "dNSHostName",
-						value: "{my_hit._source.computer_name}"
-					}
-				]
-			}
-		};
-		for (let input of sampleRule.inputs) {
-			if (input.type == "elasticsearch") {
-				if (input.request.query.query_string) {
-					let qs = JSON.parse(JSON.stringify(input.request.query));
-					input.request.query = {
-						bool: {
-							must: [
-								qs,
-								{
-									range: {
-										"@timestamp": {
-											gte: "{last_successful_check}"
-										}
-									}
-								}
-							]
-						}
-					};
-				} else if (
-					input.request.query.bool &&
-					input.request.query.bool.must
-				) {
-					let qs = JSON.parse(
-						JSON.stringify(input.request.query.bool.must[0])
-					);
-					input.request.query = {
-						bool: {
-							must: [
-								qs,
-								{
-									range: {
-										"@timestamp": {
-											gte: "{last_successful_check}"
-										}
-									}
-								}
-							]
-						}
-					};
-				} else {
-					console.log("error it ", input.request.query.sdfs.fsd);
-				}
+    static addFileToDB(path: string, update: boolean, lastTime: string) {
+        return new Promise(async (resolve, reject) => {
+            if (path.toLowerCase().endsWith('.json')) {
+                console.log('add to db ', path, update, lastTime)
+                let rule = Rule.fromFile(path)
+                try {
+                    let res = await rule.addToNeo4j(update, lastTime)
+                    resolve(res)
+                } catch (err) {
+                    console.error(err)
+                    reject(err)
+                }
+            } else {
+                reject(new Error('file is not .json'))
+            }
+        })
+    }
+    public static async main2() {
+        let filename = 'C:/Users/alireza/Desktop/Programming/personal/rules/Windows/detect_execute_commad_schtask.js'
+        let sampleRuler = require(filename)
+        let sampleRule = JSON.parse(JSON.stringify(sampleRuler))
+        let myAction = {
+            type: 'alert',
+            name: 'alert_iterate',
+            relations: {
+                ADUser: [
+                    {
+                        field: 'logonName',
+                        value: '{my_hit._source.event_data.SubjectDomainName}\\{my_hit._source.event_data.SubjectUserName}',
+                    },
+                ],
+                ADComputer: [
+                    {
+                        field: 'dNSHostName',
+                        value: '{my_hit._source.computer_name}',
+                    },
+                ],
+            },
+        }
+        for (let input of sampleRule.inputs) {
+            if (input.type == 'elasticsearch') {
+                if (input.request.query.query_string) {
+                    let qs = JSON.parse(JSON.stringify(input.request.query))
+                    input.request.query = {
+                        bool: {
+                            must: [
+                                qs,
+                                {
+                                    range: {
+                                        '@timestamp': {
+                                            gte: '{last_successful_check}',
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    }
+                } else if (input.request.query.bool && input.request.query.bool.must) {
+                    let qs = JSON.parse(JSON.stringify(input.request.query.bool.must[0]))
+                    input.request.query = {
+                        bool: {
+                            must: [
+                                qs,
+                                {
+                                    range: {
+                                        '@timestamp': {
+                                            gte: '{last_successful_check}',
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    }
+                } else {
+                    console.log('error it ', input.request.query.sdfs.fsd)
+                }
 
-				// if(input.post_process && input.post_process.action.type == 'console') {
-				//     input.post_process.action = myAction
-				// }
+                // if(input.post_process && input.post_process.action.type == 'console') {
+                //     input.post_process.action = myAction
+                // }
 
-				for (let i = 0; i < input.post_process.length; i++) {
-					let pp = input.post_process[i];
-					if (pp.action.type && pp.action.type == "console") {
-						input.post_process[i].action = myAction;
-					}
-				}
-			}
-		}
+                for (let i = 0; i < input.post_process.length; i++) {
+                    let pp = input.post_process[i]
+                    if (pp.action.type && pp.action.type == 'console') {
+                        input.post_process[i].action = myAction
+                    }
+                }
+            }
+        }
 
-		if (sampleRule.condition == "false") {
-			sampleRule.actions = [];
-		} else {
-			for (let i = 0; i < sampleRule.actions.length; i++) {
-				let action = sampleRule.actions[i];
-				if (action.type && action.type == "console") {
-					sampleRule.actions[i] = myAction;
-				}
-			}
-		}
-		console.log(util.inspect(sampleRule, false, 10));
-		fs.writeFileSync(filename + "on", JSON.stringify(sampleRule));
-		return 0;
-		// let rule = Rule.fromFile(filename + 'on')
-		// rule.addToNeo4j()
-		let r = await Rule.fromDB("access_share_admin", "ir.raha.share.access");
-		r.start();
-		return 0;
+        if (sampleRule.condition == 'false') {
+            sampleRule.actions = []
+        } else {
+            for (let i = 0; i < sampleRule.actions.length; i++) {
+                let action = sampleRule.actions[i]
+                if (action.type && action.type == 'console') {
+                    sampleRule.actions[i] = myAction
+                }
+            }
+        }
+        console.log(util.inspect(sampleRule, false, 10))
+        fs.writeFileSync(filename + 'on', JSON.stringify(sampleRule))
+        return 0
+        // let rule = Rule.fromFile(filename + 'on')
+        // rule.addToNeo4j()
+        let r = await Rule.fromDB('access_share_admin', 'ir.raha.share.access')
+        r.start()
+        return 0
 
-		// rule.start()
-		return 0;
+        // rule.start()
+        return 0
 
-		let adSync = new ADSynchronizer();
-		// let grp = await adSync.syncAllGroups()
-		// console.log(grp)
-		adSync.syncAllUsersAndGroups();
-		// adSync.syncAllComputers()
-		return 0;
-	}
-	/*
+        let adSync = new ADSynchronizer()
+        // let grp = await adSync.syncAllGroups()
+        // console.log(grp)
+        adSync.syncAllUsersAndGroups()
+        // adSync.syncAllComputers()
+        return 0
+    }
+    /*
     public static main(file: string): number {
         let sampleRule = require(file)
         console.log('name:', sampleRule.name)
@@ -287,84 +376,99 @@ class Startup {
     }
 */
 
-	static printHelp() {
-		let help =
-			"add {file/directory_of_files}: add rules to db \n" +
-			"update {file/directory_of_files} [time]: updates rules in db, with [time] sets last successful run to [time] like 2019-02-15T20:54:18.999Z \n" +
-			"remove {rule_package} {rule_name} [-force]: removes rules from db (you can use regexp like: remove rule .* .*), -force deletes rule with its alerts \n" +
-			"set_last_run {rule_package} {rule_name} {last_run_time}: sets last success run of rule to provided date and time \n" +
-			"run {rule_package} {rule_name}: runs the rule, you can also use regexp here => run .* .* (runs all rules) \n" +
-			"adsync [--only-computers] [--only-users]:: syncs db with active directory \n";
-		console.log(help);
-	}
+    static printHelp() {
+        let help =
+            'add {file/directory_of_files}: add rules to db \n' +
+            'update {file/directory_of_files} [time]: updates rules in db, with [time] sets last successful run to [time] like 2019-02-15T20:54:18.999Z \n' +
+            'remove {rule_package} {rule_name} [-force]: removes rules from db (you can use regexp like: remove rule .* .*), -force deletes rule with its alerts \n' +
+            'set_last_run {rule_package} {rule_name} {last_run_time}: sets last success run of rule to provided date and time \n' +
+            'run {rule_package} {rule_name}: runs the rule, you can also use regexp here => run .* .* (runs all rules) \n' +
+            'adsync [--only-computers] [--only-users]:: syncs db with active directory \n'
+            'sigma_convert {sigma_rule_address} {output_file}: converts a sigma rule to raymon rule \n' +
+        console.log(help)
+    }
 
-	static parseAction(action: any): Action {
-		if (action.type == "console") {
-			return new LogAction(action.name);
-		} else {
-			console.log("trigger type not supported :" + action.type);
-			return null;
-		}
-	}
+    static parseAction(action: any): Action {
+        if (action.type == 'console') {
+            return new LogAction(action.name)
+        } else {
+            console.log('trigger type not supported :' + action.type)
+            return null
+        }
+    }
 
-	static sleep(ms: number) {
-		return new Promise((resolve, reject) => {
-			setTimeout(() => {
-				resolve();
-			}, ms);
-		});
-	}
+    static sleep(ms: number) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                resolve()
+            }, ms)
+        })
+    }
 
-	static async runAllRulesPriodically() {
-		let allRules = await Rule.list();
-		while (true) {
-			console.log("::running all rules::");
-			for (let ruleName of Array.from(allRules.keys())) {
-				console.log(ruleName);
-				await allRules.get(ruleName).fire();
-			}
-			console.log("::end running all rules::");
-			await Startup.sleep(30 * 1000);
-		}
-	}
+    static async runAllRulesPriodically() {
+        let allRules = await Rule.list()
+        while (true) {
+            console.log('::running all rules::')
+            for (let ruleName of Array.from(allRules.keys())) {
+                console.log(ruleName)
+                await allRules.get(ruleName).fire()
+            }
+            console.log('::end running all rules::')
+            await Startup.sleep(30 * 1000)
+        }
+    }
 }
 
 // Startup.main2();
 
-console.log(process.argv);
-
+console.log(process.argv)
+try {
+    ClientFactory.fillConfigFromDB()
+} catch(err) {
+    console.log('init fill config failed ', err)
+}
 if (process.argv.length < 3) {
-	app.use(
-		bodyParser.urlencoded({
-			// Middleware
-			extended: true
-		})
-	);
+    app.use(
+        bodyParser.urlencoded({
+            // Middleware
+            extended: true,
+        })
+    )
 
-	//enable cors 
-	app.use(function(req, res, next) {
-		res.header("Access-Control-Allow-Origin", "*");
-		res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-		next();
-	});
+    //enable cors
+    app.use(function(req, res, next) {
+        res.header('Access-Control-Allow-Origin', '*')
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
+        next()
+    })
 
-	// app.use(.unless({ path: ["/auth"] }));
-	// app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
-	// app.use("/auth", jwt({ secret: "shhhhhhared-secret" }), AuthController);
+    // app.use(.unless({ path: ["/auth"] }));
+    // app.use("/api", jwt({ secret: "shhhhhhared-secret" }), ApiController);
+    // app.use("/auth", jwt({ secret: "shhhhhhared-secret" }), AuthController);
+    app.use(
+        jwt({secret: 'shhhhhhared-secret'}).unless({
+            path: ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/settings/setup'],
+        })
+    )
 
-	// app.use(jwt({ secret: 'shhhhhhared-secret'}).unless({path: ['/auth/login']}));
+    app.use('/api/v1/stats', StatsController)
+    app.use('/api/v1/alerts', AlertsController)
+    app.use('/api/v1/environment', EnvironmentController)
+    app.use('/api/v1/logs', LogsController)
+    app.use('/api/v1/settings', SettingsController)
 
-	app.use("/api", ApiController);
-
-	app.use("/auth", AuthController);
-	app.use("/stats", StatsController);
-	app.listen(port, () => {
-		console.log(`Listening at http://localhost:${port}/`);
-		Startup.runAllRulesPriodically();
-	});
+    app.listen(port, async () => {
+        console.log(`Listening at http://localhost:${port}/`)
+        // Startup.runAllRulesPriodically();
+        try {
+            ClientFactory.checkHealth()
+        } catch(err) {
+            console.log('check health failed ', err.message)
+        }
+    })
 } else {
-	if (process.argv[2] == "-help") {
-		Startup.printHelp();
-	}
-	Startup.main3(process.argv.slice(2));
+    if (process.argv[2] == '-help') {
+        Startup.printHelp()
+    }
+    Startup.main3(process.argv.slice(2))
 }

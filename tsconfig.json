@@ -6,5 +6,8 @@
         "resolveJsonModule": true,
         "outDir": "./bin",
         "esModuleInterop": true
-    }
+    },
+    "exclude": [
+        "node_modules"
+    ]
 }

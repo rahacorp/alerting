@@ -19,15 +19,15 @@ function getHashedPassword(pass: string) {
 function getPermissionsByRole(role: string) {
 	let permissions = []
 	if(role === 'admin') {
-		permissions = ['process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
-		'adcomputer:read', 'aduser:read', 'user:read', 'log:read', 'user:create', 'user:reset_password']
+		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 'health:read',
+		'adcomputer:read', 'aduser:read', 'user:read', 'log:read', 'user:create', 'user:reset_password', 'user:write', 'user:delete']
 	} 
 	if(role === 'viewer') {
-		permissions = ['process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
+		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:assign', 'alert:unassign', 'alert:write', 
 		'adcomputer:read', 'aduser:read', 'user:read', 'log:read']
 	}
 	if(role === 'responder') {
-		permissions = ['process:read', 'alert:read', 'alert:write', 'adcomputer:read', 'aduser:read',
+		permissions = [role, 'user:self', 'process:read', 'alert:read', 'alert:write', 'adcomputer:read', 'aduser:read',
 		 'user:read', 'log:read']
 	}
 	return permissions

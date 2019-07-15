@@ -1,0 +1,19 @@
+{
+    "neo4j": {
+        "address": "bolt://192.168.1.105",
+        "username": "neo4j",
+        "password": "123qweQWE"
+    },
+    "ad": {
+        "url": "ldap://d2012-dc1.raha.local",
+        "basedn": "dc=raha2012,dc=local",
+        "username": "balaban@raha2012.local",
+        "password": "123qweQWE"
+    },
+    "logstash": {
+        "address": "http://192.168.1.218:9601"
+    },
+    "elastic": {
+        "host": "edr.rahasec.com:9200"
+    }
+}

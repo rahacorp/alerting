@@ -292,7 +292,7 @@ export class Rule {
 				let ruleObj = JSON.parse(this.data)
 				let q = "MERGE (rule:Rule {name : {ruleName}, package: {rulePkg} }) ON CREATE SET rule.data = {data}, " +
 				"rule.status = {status}, rule.description = {description}, rule.severity = {severity}, " + 
-				"rule.author = {author}, rule.references = {references}, rule.tags = {tags}"
+				"rule.author = {author}, rule.references = {references}, rule.tags = {tags}, rule.title = {title}"
 				if(update) {
 					q = q.replace("ON CREATE SET", "ON MATCH SET")
 					if(lastSuccessTime) {
@@ -312,6 +312,7 @@ export class Rule {
 							author: ruleObj.author,
 							references: ruleObj.references,
 							tags: ruleObj.tags,
+							title: ruleObj.title,
 							lastSuccess: lastSuccessTime,
 						}
 					)

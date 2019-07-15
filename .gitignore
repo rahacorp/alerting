@@ -41,3 +41,4 @@ test/*.js
 bin
 config.json
 config-local.json
+uploads

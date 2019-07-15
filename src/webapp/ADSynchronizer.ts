@@ -85,6 +85,14 @@ export class ADSynchronizer {
 					}
 					if(computer.dNSHostName) {
 						computer.dNSHostName = computer.dNSHostName.toLowerCase()
+					} else {
+						continue
+					}
+					if(!computer.operatingSystem) {
+						computer.operatingSystem = ''
+					}
+					if(!computer.operatingSystemVersion) {
+						computer.operatingSystemVersion = ''
 					}
 					synchronizer.neo4jSession
 						.run(

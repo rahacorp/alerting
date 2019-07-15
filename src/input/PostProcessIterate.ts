@@ -60,9 +60,9 @@ export class PostProcessIterate implements PostProcess {
                                 sourceObj = this.context.formatObject(this.key)
                             }
                             let sourceID = crypto.createHash('sha1').update(JSON.stringify(sourceObj)).digest('hex') + ':' + new Date().toLocaleDateString()
-                            console.log('postprocess action:', sourceID, sourceObj)
+                            // console.log('postprocess action:', sourceID, sourceObj)
                             let actionResp = await this.action.act(sourceObj, sourceID, {}, this.rule)
-                            console.log('postprocess dn action', actionResp)
+                            // console.log('postprocess dn action', actionResp)
                         }
                     } else {
                         console.log('iterate condition is false : ' + this.iterateCondition)
