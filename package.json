@@ -53,6 +53,7 @@
     "neo4j-driver": "^1.7.2",
     "neode": "^0.2.16",
     "node-rest-client": "^3.1.0",
+    "orientjs": "^3.0.5",
     "pino": "^5.12.3",
     "pino-pretty": "^3.0.0",
     "react": "^16.8.0-alpha.1",
