@@ -48,7 +48,7 @@
     "later": "^1.2.0",
     "material-ui": "^0.20.2",
     "material-ui-search-bar": "^0.4.2",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "multer": "^1.4.1",
     "neo4j-driver": "^1.7.2",
     "neode": "^0.2.16",
